@@ -1,0 +1,30 @@
+# ── Large data & binaries: NEVER committed (git is for code, not gigabytes) ──
+# Otzaria portable app (downloaded from upstream releases by build/fetch_sources.ps1)
+usb-root/Otzaria-Windows/
+usb-root/Otzaria-Mac/
+usb-root/Otzaria-Linux/
+usb-root/*.apk
+
+# Otzaria text library (downloaded + extracted by build/fetch_sources.ps1)
+usb-root/Library/
+
+# Browser-reader generated book data (produced by build/convert_library.py + build_translations.py)
+usb-root/Library-Web/books/
+usb-root/Library-Web/tree.js
+usb-root/Library-Web/tree-bilingual.js
+
+# Generated dictionary data (produced by lexicon_build.py)
+usb-root/Library-Web/dictionaries/
+usb-root/Library-Web/jastrow/
+
+# Raw downloads & scratch
+downloads/
+*.output
+*.zip
+
+# ── Committed (small, the actual platform) ──
+# usb-root/START-HERE.html, SOURCES-AND-DATES.html
+# usb-root/Zmanim/**            (toolkit + engines + cities)
+# usb-root/Library-Web/index.html, reader.js, fonts/**
+# usb-root/licenses/**
+# build/**.py, build/**.ps1, sources.json, README.md

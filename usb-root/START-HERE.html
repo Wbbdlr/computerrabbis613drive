@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Computer Rabbis — Offline Torah Drive</title>
+<style>
+  :root { --navy:#232936; --navy2:#2f3747; --gold:#ee9f7e; --coral:#ee9f7e; --cream:#faf7f0; --ink:#22252b; --muted:#6b7280; --line:#e5e0d4; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--cream); color:var(--ink); font-family: Georgia, "Times New Roman", "Noto Serif Hebrew", serif; line-height:1.55; }
+  .hero { background:var(--navy); color:#fff; padding:32px 24px 30px; text-align:center; border-bottom:5px solid var(--coral); }
+  .hero img.logo { width:132px; height:132px; display:block; margin:0 auto 10px; }
+  .hero .brand { color:var(--coral); letter-spacing:.18em; text-transform:uppercase; font-size:1rem; }
+  .hero h1 { font-size:2.3rem; margin:10px 0 6px; font-weight:normal; }
+  .hero .he { font-size:1.5rem; color:#cdd6ea; direction:rtl; }
+  .hero p.tag { color:#cdd6ea; max-width:640px; margin:14px auto 0; }
+  main { max-width:880px; margin:0 auto; padding:10px 20px 50px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:20px 24px; margin:20px 0; box-shadow:0 1px 3px rgba(27,42,74,.06); }
+  h2 { color:var(--navy); font-weight:normal; border-bottom:2px solid var(--gold); display:inline-block; padding-bottom:2px; margin:4px 0 12px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  @media (max-width:700px){ .grid { grid-template-columns:1fr; } }
+  .big-btn { display:block; background:var(--navy2); color:#fff; text-decoration:none; text-align:center; padding:16px; border-radius:10px; font-size:1.15rem; margin-top:12px; }
+  .big-btn:hover { filter:brightness(1.15); }
+  .steps li { margin:8px 0; }
+  code, .path { background:#f2efe6; border:1px solid var(--line); border-radius:5px; padding:1px 7px; font-family:Consolas, monospace; font-size:.92em; }
+  .muted, footer { color:var(--muted); font-size:.9rem; }
+  footer { max-width:880px; margin:0 auto; padding:0 20px 40px; }
+  footer hr { border:none; border-top:1px solid var(--line); }
+  ul.contents li { margin:4px 0; }
+  .heb { direction:rtl; unicode-bidi:embed; }
+</style>
+</head>
+<body>
+<div class="hero">
+  <a href="https://computerrabbis.com" target="_blank" rel="noopener noreferrer" title="Visit Computer Rabbis (opens the website)" style="text-decoration:none;color:inherit">
+    <img class="logo" src="brand/computer-rabbis-logo.png" alt="Computer Rabbis">
+    <div class="brand">Computer Rabbis</div>
+  </a>
+  <h1>The Offline Torah Drive</h1>
+  <div class="he">תורה שלמה בכיס — בלי אינטרנט</div>
+  <p class="tag">A complete Torah library and a perpetual luach &amp; zmanim calculator —
+  entirely on this drive. <b>No internet. No installation. No updates. Ever.</b></p>
+</div>
+<main>
+  <div class="card">
+    <h2>What is this?</h2>
+    <p>This drive carries a library of <b>thousands of seforim</b> — Tanach with meforshim, Mishnah,
+    Talmud Bavli and Yerushalmi, Rambam, Shulchan Aruch with nosei keilim, Mishnah Berurah, midrash,
+    mussar, chassidus, sifrei shu"t and much more — plus a full <b>zmanim and Jewish-calendar
+    calculator</b> that works for any place on earth and any date, forever.</p>
+    <p>Everything runs directly from the drive. Nothing is installed on your computer, nothing
+    connects to the internet, and nothing ever expires or needs refreshing. It is designed for homes
+    and offices without internet access, for travel, and as a reliable backup that always works.</p>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>The Library — two ways</h2>
+      <p><b>Simplest — nothing to install, no program to run:</b></p>
+      <a class="big-btn" href="Library-Web/index.html">Open the Library in your browser ›</a>
+      <p class="muted" style="margin-top:6px">Thousands of seforim, browse and search by title, read with
+      meforshim — opens like a web page, fully offline. Best for most people.</p>
+      <hr style="border:none;border-top:1px solid var(--line);margin:14px 0">
+      <p><b>Full app — instant full-text search across every sefer:</b></p>
+      <ol class="steps">
+        <li>Open the folder <span class="path">Otzaria-Windows</span> and double-click
+            <span class="path">otzaria.exe</span>.</li>
+        <li>If asked where the library is, click <b class="heb">בחר תיקייה</b> (choose folder) and pick the
+            <span class="path">Library</span> folder on this drive. Once per computer.</li>
+      </ol>
+      <p class="muted">Mac/Linux builds are in their own folders where included; Android and iPhone users
+      can install the free “Otzaria” app from the app stores.</p>
+    </div>
+    <div class="card">
+      <h2>Zmanim &amp; Luach</h2>
+      <p>Zmanim for <b>171 Jewish communities worldwide</b> (or any custom coordinates), Hebrew dates,
+      the weekly parsha, Daf Yomi, candle-lighting and havdalah times, and a printable monthly luach —
+      valid for any year, past or future.</p>
+      <a class="big-btn" href="Zmanim/index.html">Open the Zmanim &amp; Luach page ›</a>
+      <p class="muted" style="margin-bottom:0">Opens in your web browser — still fully offline.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Dictionaries</h2>
+    <p>Look up any word in <b>Jastrow</b> (Talmudic Aramaic and Hebrew),
+    <b>BDB</b> (Brown-Driver-Briggs, Biblical Hebrew and Aramaic), and
+    <b>Klein</b> (Etymological Dictionary of Hebrew) — all searchable from
+    one page. Nikud optional.</p>
+    <a class="big-btn" href="Library-Web/dictionaries.html">Open the Dictionaries ›</a>
+    <p class="muted" style="margin-bottom:0">All public-domain or CC-licensed texts, digitized by Sefaria.</p>
+  </div>
+
+  <div class="card">
+    <h2>Why offline?</h2>
+    <p>Many of us choose homes and offices without internet — and everyone occasionally finds themselves
+    without a connection. Torah shouldn't depend on the network. The seforim on this drive are yours,
+    on your desk, always available: no filter needed, no subscription, no account, no updates, nothing
+    to break. The zmanim are computed astronomically on your own computer, so they remain accurate
+    <i>in perpetuity</i>.</p>
+    <p class="muted"><b>What's deliberately not here:</b> anything that changes — kashrus directories, eruv
+    statuses, shul schedules. For those, use current community resources. And for halacha l'maaseh,
+    always consult your Rav.</p>
+  </div>
+
+  <div class="card">
+    <h2>About &amp; credits</h2>
+    <p>Assembled and distributed by <b>Computer Rabbis</b> (<a href="https://computerrabbis.com" target="_blank" rel="noopener noreferrer">computerrabbis.com</a>) — honest, capable computer help for our
+    community. Visit us (when you're online!) for service, or pass this drive to a friend.</p>
+    <ul class="contents muted">
+      <li>Library texts courtesy of <b>Sefaria</b> (sefaria.org), <b>Dicta</b> (dicta.org.il), Hebrew
+      Wikisource, the Ben-Yehuda Project, and Orayta — under their respective open licenses (see the
+      <span class="path">licenses</span> folder).</li>
+      <li>Library software: <b>Otzaria</b> (github.com/sivan22/otzaria), public-domain (Unlicense).</li>
+      <li>Zmanim engine: <b>KosherZmanim</b> (LGPL-2.1), a port of the KosherJava Zmanim library.</li>
+      <li>This product is independent and is not affiliated with or endorsed by Sefaria, Dicta, Hebcal,
+      or the Otzaria project.</li>
+    </ul>
+  </div>
+</main>
+<footer>
+  <hr>
+  <p>© Computer Rabbis · This drive may be copied and shared for personal, non-commercial use.
+  Zmanim are astronomical calculations — customs vary; consult your Rav for practice.</p>
+</footer>
+</body>
+</html>

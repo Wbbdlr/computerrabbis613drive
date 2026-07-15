@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dictionaries — Computer Rabbis Offline Library</title>
+<style>
+  @font-face { font-family:"FrankRuehl"; src:url("fonts/FrankRuehlCLM-Medium.ttf"); font-display:swap; }
+  :root { --navy:#1b2a4a; --gold:#c9a227; --cream:#faf7f0; --ink:#22252b; --muted:#6b7280; --line:#e5e0d4; --sidebar:#f3efe4; }
+  * { box-sizing:border-box; }
+  html,body { height:100%; margin:0; }
+  body { display:flex; flex-direction:column; background:var(--cream); color:var(--ink); font-family:Georgia,"Times New Roman",serif; }
+  header { background:var(--navy); color:#fff; padding:10px 16px; border-bottom:4px solid var(--gold); display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  header a.brand { color:var(--gold); text-transform:uppercase; letter-spacing:.12em; font-size:.85rem; text-decoration:none; }
+  header h1 { font-size:1.1rem; font-weight:normal; margin:0; }
+  header .right { margin-inline-start:auto; display:flex; gap:14px; align-items:center; font-size:.85rem; }
+  header a.home { color:#cdd6ea; text-decoration:none; border:1px solid #3a4d78; border-radius:6px; padding:4px 10px; }
+  header a.home:hover { background:#24365e; }
+  .toolbar { background:#f0ebe0; border-bottom:1px solid var(--line); padding:8px 16px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .toolbar label { font-size:.85rem; color:var(--muted); }
+  .dict-btn { background:none; border:1px solid var(--line); border-radius:6px; padding:5px 12px; font:inherit; font-size:.85rem; cursor:pointer; color:var(--ink); }
+  .dict-btn.active { background:var(--navy); color:#fff; border-color:var(--navy); }
+  .dict-btn:hover:not(.active) { background:#e5e0d4; }
+  .dict-count { font-size:.78rem; color:var(--muted); margin-inline-start:auto; }
+  .layout { flex:1; display:flex; min-height:0; }
+  .side { width:320px; background:var(--sidebar); border-inline-end:1px solid var(--line); display:flex; flex-direction:column; }
+  .searchbox { padding:12px; border-bottom:1px solid var(--line); }
+  .searchbox input { width:100%; padding:10px 12px; border:1px solid #c9c3b4; border-radius:8px; font:inherit; font-size:1.3rem; direction:rtl; }
+  #lex-res { flex:1; overflow:auto; }
+  .lex-item { padding:7px 14px; cursor:pointer; direction:rtl; font-family:"FrankRuehl",serif; font-size:1.15rem; border-bottom:1px solid #ece6d6; display:flex; justify-content:space-between; align-items:baseline; }
+  .lex-item:hover { background:#eae4d3; }
+  .lex-item.active { background:var(--gold); color:var(--navy); }
+  .lex-item .src { font-size:.7rem; direction:ltr; color:var(--muted); font-family:Georgia,serif; }
+  .lex-item.active .src { color:var(--navy); opacity:.7; }
+  #lex-entry { flex:1; overflow:auto; padding:26px clamp(16px,5vw,70px); }
+  .lex-hw { direction:rtl; font-family:"FrankRuehl",serif; font-size:2rem; color:var(--navy); border-bottom:2px solid var(--gold); padding-bottom:8px; margin-bottom:4px; }
+  .lex-src { font-size:.8rem; color:var(--muted); margin-bottom:14px; }
+  .lex-def { line-height:1.85; font-size:1.05rem; }
+  .lex-def a { color:#2f4f8f; text-decoration:none; }
+  .lex-def a[dir="rtl"] { font-family:"FrankRuehl",serif; }
+  .muted { color:var(--muted); }
+  .welcome { max-width:600px; margin:8vh auto; text-align:center; color:var(--muted); }
+  .welcome h2 { color:var(--navy); font-weight:normal; }
+  .welcome .dict-list { text-align:left; margin:20px auto; max-width:400px; }
+  .welcome .dict-list dt { font-weight:bold; color:var(--navy); margin-top:10px; }
+  .welcome .dict-list dd { margin:2px 0 0 20px; }
+  @media (max-width:760px){ .side { width:46vw; } .lex-hw { font-size:1.5rem; } }
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="https://computerrabbis.com" target="_blank" rel="noopener noreferrer">Computer Rabbis</a>
+  <h1>Dictionaries</h1>
+  <div class="right">
+    <a class="home" href="index.html">Library</a>
+    <a class="home" href="../START-HERE.html">Home</a>
+  </div>
+</header>
+<div class="toolbar" id="dict-bar"></div>
+<div class="layout">
+  <aside class="side">
+    <div class="searchbox">
+      <input type="text" id="lex-in" placeholder="Search a word..." dir="rtl" autocomplete="off">
+    </div>
+    <div id="lex-res"></div>
+  </aside>
+  <div id="lex-entry">
+    <div class="welcome" id="welcome">
+      <h2>Offline Dictionaries</h2>
+      <p>Search across multiple Hebrew and Aramaic dictionaries. Type a word on the right (nikud optional).</p>
+      <dl class="dict-list" id="dict-info"></dl>
+      <p class="muted">All texts are public domain or used under CC license. Digitized by Sefaria.</p>
+    </div>
+  </div>
+</div>
+<script src="dictionaries.js"></script>
+<script src="dictionaries/index.js"></script>
+</body>
+</html>

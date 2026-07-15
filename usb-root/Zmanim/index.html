@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jewish Calendar &amp; Zmanim Toolkit — Computer Rabbis</title>
+<style>
+  :root { --navy:#232936; --navy2:#2f3747; --gold:#ee9f7e; --coral:#ee9f7e; --cream:#faf7f0; --ink:#22252b; --muted:#6b7280; --line:#e5e0d4; --card:#fff; --accent:#2f4f8f; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--cream); color:var(--ink); font-family:Georgia,"Times New Roman","Noto Serif Hebrew",serif; line-height:1.45; }
+  header { background:var(--navy); color:#fff; padding:16px 20px 0; border-bottom:4px solid var(--gold); }
+  header .brandrow { display:flex; align-items:center; gap:12px; }
+  header img.logo { width:52px; height:52px; flex:none; display:block; }
+  header .drive-home { margin-inline-start:auto; color:#eaeef6; text-decoration:none; border:1px solid #3a4353; background:var(--navy2); border-radius:6px; padding:7px 14px; font-size:.85rem; }
+  header .drive-home:hover { background:#3a4353; }
+  header .brand { font-size:1rem; letter-spacing:.12em; text-transform:uppercase; color:var(--gold); }
+  header h1 { margin:2px 0 2px; font-size:1.5rem; font-weight:normal; }
+  header .sub { color:#cdd6ea; font-size:.9rem; margin-bottom:12px; }
+  .tabbar { display:flex; flex-wrap:wrap; gap:4px; }
+  .tabbar button { background:var(--navy2); color:#cdd6ea; border:none; border-radius:8px 8px 0 0; padding:9px 18px; font:inherit; cursor:pointer; }
+  .tabbar button.active { background:var(--cream); color:var(--navy); font-weight:bold; }
+  main { max-width:1000px; margin:0 auto; padding:16px 16px 40px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px 18px; margin:14px 0; box-shadow:0 1px 3px rgba(27,42,74,.06); }
+  .controls { display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end; }
+  .field { display:flex; flex-direction:column; gap:4px; }
+  .field label { font-size:.78rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+  select,input,button { font:inherit; padding:7px 10px; border:1px solid #c9c3b4; border-radius:7px; background:#fff; color:var(--ink); }
+  select { max-width:340px; }
+  button.go { cursor:pointer; background:var(--navy2); color:#fff; border-color:var(--navy2); }
+  button.ghost { cursor:pointer; background:#fff; color:var(--navy2); }
+  button.go:hover,button.ghost:hover { filter:brightness(1.12); }
+  .datebar { display:flex; gap:8px; align-items:center; }
+  .today-strip { display:flex; flex-wrap:wrap; gap:10px 26px; align-items:baseline; }
+  .today-strip .he { font-size:1.4rem; direction:rtl; }
+  .today-strip .item b { color:var(--accent); }
+  .flag { display:inline-block; background:var(--gold); color:var(--navy); border-radius:6px; padding:1px 9px; margin-inline-start:6px; font-size:.9rem; }
+  table.zmanim,table.ztable { width:100%; border-collapse:collapse; }
+  table.zmanim th,table.zmanim td,table.ztable td { padding:7px 10px; border-bottom:1px solid var(--line); text-align:left; }
+  td.he,.he { direction:rtl; }
+  table.zmanim td.he { text-align:right; color:var(--muted); }
+  table.zmanim td.time { font-variant-numeric:tabular-nums; font-weight:bold; color:var(--navy); white-space:nowrap; }
+  tr.group td { background:#f2efe6; color:var(--navy); font-size:.82rem; text-transform:uppercase; letter-spacing:.08em; border-bottom:none; font-weight:bold; }
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:720px){ .two-col { grid-template-columns:1fr; } }
+  .shabbos h3 { margin:0 0 8px; color:var(--navy); }
+  .shabbos .big { font-size:1.5rem; font-weight:bold; color:var(--navy); font-variant-numeric:tabular-nums; }
+  .big { font-size:1.4rem; color:var(--navy); }
+  .note,.muted,footer { color:var(--muted); font-size:.85rem; }
+  footer { max-width:1000px; margin:0 auto; padding:0 16px 30px; }
+  footer hr { border:none; border-top:1px solid var(--line); margin:8px 0 12px; }
+  #monthwrap { overflow-x:auto; }
+  table.month { width:100%; border-collapse:collapse; font-size:.85rem; }
+  table.month th,table.month td { border:1px solid var(--line); padding:4px 6px; text-align:center; font-variant-numeric:tabular-nums; }
+  table.month th { background:var(--navy); color:#fff; font-weight:normal; }
+  table.month tr.shabbosrow { background:#f5efdd; }
+  .errbox { background:#7a1f1f; color:#fff; padding:14px 16px; border-radius:8px; }
+  .outbox { margin-top:12px; padding:12px 14px; background:#f7f4ea; border-radius:8px; }
+  @media print { header,.tabbar,.card.controlscard,.card.dailycard,.card.shabboscard,.noprint,footer .noprint { display:none !important; } body { background:#fff; } .card { border:none; box-shadow:none; padding:0; } #monthcard { display:block !important; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="brandrow">
+    <a href="https://computerrabbis.com" target="_blank" rel="noopener noreferrer" title="Visit Computer Rabbis (opens the website)">
+      <img class="logo" src="../brand/computer-rabbis-logo.png" alt="Computer Rabbis"></a>
+    <div>
+      <a href="https://computerrabbis.com" target="_blank" rel="noopener noreferrer" class="brand" style="text-decoration:none">Computer Rabbis</a>
+      <h1>Jewish Calendar &amp; Zmanim Toolkit <span style="color:var(--gold)">· זמנים ולוח</span></h1>
+    </div>
+    <a href="../START-HERE.html" class="drive-home">Drive Home</a>
+  </div>
+  <div class="sub">Fully offline — zmanim, dates, holidays &amp; yahrzeits for any place, any year, forever. No internet needed.</div>
+  <div class="tabbar">
+    <button id="tab-zmanim" class="active">Zmanim &amp; Luach</button>
+    <button id="tab-converter">Date Converter</button>
+    <button id="tab-holidays">Holidays</button>
+    <button id="tab-yahrzeit">Yahrzeit</button>
+    <button id="tab-learning">Daily Learning</button>
+    <button id="tab-omer">Sefiras HaOmer</button>
+    <button id="tab-molad">Molad</button>
+    <button id="tab-shiurim">Shiurim</button>
+    <button id="tab-gematria">Gematria</button>
+  </div>
+</header>
+<main>
+  <div id="fatal" style="display:none" class="errbox"></div>
+
+  <!-- ================= ZMANIM ================= -->
+  <section id="panel-zmanim">
+    <div class="card controlscard">
+      <div class="controls">
+        <div class="field" style="flex:1; min-width:260px">
+          <label>Location (<span id="citycount"></span> communities — or custom coords below)</label>
+          <input type="text" id="cityfilter" placeholder="Type to filter cities…">
+          <select id="city" size="1"></select>
+        </div>
+        <div class="field"><label>Date</label>
+          <div class="datebar">
+            <button class="ghost" id="prevday" title="Previous day">◀</button>
+            <input type="date" id="date">
+            <button class="ghost" id="nextday" title="Next day">▶</button>
+            <button class="go" id="todaybtn">Today</button>
+          </div>
+        </div>
+        <div class="field"><label>Candles (min before shkia)</label><input type="number" id="candlemin" min="0" max="60" step="1" value="18" style="width:80px"></div>
+        <div class="field"><label>Elevation</label><span><input type="checkbox" id="useelev"> <span class="note">use for netz/shkia</span></span></div>
+      </div>
+      <details style="margin-top:10px">
+        <summary class="note" style="cursor:pointer">Custom coordinates (for anywhere not in the list)</summary>
+        <div class="controls" style="margin-top:8px">
+          <div class="field"><label>Latitude</label><input type="number" id="clat" step="0.001" style="width:110px"></div>
+          <div class="field"><label>Longitude</label><input type="number" id="clon" step="0.001" style="width:110px"></div>
+          <div class="field"><label>IANA timezone</label><input type="text" id="ctz" placeholder="America/New_York" style="width:210px"></div>
+          <div class="field"><label>&nbsp;</label><button class="go" id="usecustom">Use these coordinates</button></div>
+        </div>
+      </details>
+    </div>
+    <div class="card dailycard"><div class="today-strip" id="todaystrip"></div></div>
+    <div class="two-col">
+      <div class="card">
+        <table class="zmanim" id="ztable"></table>
+        <p class="note" style="margin-bottom:0">Times use the selected location’s time zone (via your computer’s clock/timezone rules).</p>
+      </div>
+      <div>
+        <div class="card shabbos shabboscard" id="shabboscard"></div>
+        <div class="card noprint">
+          <h3 style="margin:0 0 6px;color:var(--navy)">Monthly luach</h3>
+          <p class="note" style="margin:0 0 10px">A printable table of key zmanim for the selected civil month.</p>
+          <button class="go" id="showmonth">Show / refresh month</button>
+          <button class="ghost" id="printmonth">Print month</button>
+          <button class="ghost" id="export-candles" title="Download a year of candle-lighting &amp; havdalah times as an .ics calendar file">Export candles (year) .ics</button>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="monthcard" style="display:none">
+      <h3 id="monthtitle" style="margin:0 0 8px;color:var(--navy)"></h3>
+      <div id="monthwrap"></div>
+    </div>
+  </section>
+
+  <!-- ================= CONVERTER ================= -->
+  <section id="panel-converter" style="display:none">
+    <div class="two-col">
+      <div class="card">
+        <h3 style="margin-top:0;color:var(--navy)">Civil → Hebrew</h3>
+        <div class="controls">
+          <div class="field"><label>Civil date</label><input type="date" id="cg-date"></div>
+          <div class="field"><label>&nbsp;</label><button class="go" id="cg-go">Convert</button></div>
+        </div>
+        <div class="outbox" id="cg-out"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0;color:var(--navy)">Hebrew → Civil</h3>
+        <div class="controls">
+          <div class="field"><label>Day</label><input type="number" id="ch-day" min="1" max="30" style="width:70px"></div>
+          <div class="field"><label>Month</label><select id="ch-month"></select></div>
+          <div class="field"><label>Year (עברי)</label><input type="number" id="ch-year" style="width:100px"></div>
+          <div class="field"><label>&nbsp;</label><button class="go" id="ch-go">Convert</button></div>
+        </div>
+        <div class="outbox" id="ch-out"></div>
+        <p class="note">Hebrew day begins the previous evening at nightfall. Year is the full year (e.g. 5786).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= HOLIDAYS ================= -->
+  <section id="panel-holidays" style="display:none">
+    <div class="card">
+      <div class="controls">
+        <div class="field"><label>Civil year</label><input type="number" id="hol-year" style="width:110px"></div>
+        <div class="field"><label>Custom</label><span><input type="checkbox" id="hol-israel"> <span class="note">Israel schedule (1-day yom tov)</span></span></div>
+        <div class="field"><label>Detail</label><span><input type="checkbox" id="hol-minor"> <span class="note">include minor days</span></span></div>
+        <div class="field"><label>&nbsp;</label><button class="go" id="hol-go">Show holidays</button></div>
+        <div class="field"><label>&nbsp;</label><button class="ghost" id="hol-export" title="Download these holidays as an .ics calendar file">Export .ics</button></div>
+      </div>
+      <div id="hol-out" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <!-- ================= YAHRZEIT ================= -->
+  <section id="panel-yahrzeit" style="display:none">
+    <div class="card">
+      <h3 style="margin-top:0;color:var(--navy)">Yahrzeit &amp; Hebrew-anniversary calculator</h3>
+      <div class="controls">
+        <div class="field"><label>Occasion</label>
+          <select id="yz-kind"><option value="yahrzeit">Yahrzeit (petira)</option><option value="birthday">Hebrew birthday / anniversary</option></select></div>
+        <div class="field"><label>Enter date as</label>
+          <select id="yz-mode"><option value="greg">Civil date</option><option value="heb">Hebrew date</option></select></div>
+      </div>
+      <div class="controls" id="yz-greg-row" style="margin-top:10px">
+        <div class="field"><label>Civil date of the event</label><input type="date" id="yz-gdate"></div>
+        <div class="field"><label>After sunset?</label><span><input type="checkbox" id="yz-aftersunset"> <span class="note">count as next Hebrew day</span></span></div>
+      </div>
+      <div class="controls" id="yz-heb-row" style="margin-top:10px; display:none">
+        <div class="field"><label>Day</label><input type="number" id="yz-hday" min="1" max="30" style="width:70px"></div>
+        <div class="field"><label>Month</label><select id="yz-hmonth"></select></div>
+        <div class="field"><label>Year (עברי)</label><input type="number" id="yz-hyear" style="width:100px"></div>
+      </div>
+      <div class="controls" style="margin-top:10px">
+        <div class="field"><label>How many years</label><input type="number" id="yz-count" value="20" min="1" max="60" style="width:80px"></div>
+        <div class="field"><label>&nbsp;</label><button class="go" id="yz-go">Calculate</button></div>
+        <div class="field"><label>&nbsp;</label><button class="ghost" id="yz-export" style="display:none" title="Download these dates as an .ics calendar file">Export .ics</button></div>
+      </div>
+      <div id="yz-out" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <!-- ================= DAILY LEARNING ================= -->
+  <section id="panel-learning" style="display:none">
+    <div class="card">
+      <div class="controls">
+        <div class="field"><label>Date</label>
+          <div class="datebar">
+            <button class="ghost" id="lrn-prev">◀</button>
+            <input type="date" id="lrn-date">
+            <button class="ghost" id="lrn-next">▶</button>
+            <button class="go" id="lrn-today">Today</button>
+          </div>
+        </div>
+      </div>
+      <div id="lrn-out" style="margin-top:14px"></div>
+      <p class="note">Daf Yomi (Bavli &amp; Yerushalmi) and the weekly parsha are calculated on this
+      computer for any date. Open the matching sefer in the Library to learn the source.</p>
+    </div>
+  </section>
+
+  <!-- ================= SEFIRAS HAOMER ================= -->
+  <section id="panel-omer" style="display:none">
+    <div class="card">
+      <div class="controls">
+        <div class="field"><label>Date</label>
+          <div class="datebar">
+            <button class="ghost" id="omer-prev">◀</button>
+            <input type="date" id="omer-date">
+            <button class="ghost" id="omer-next">▶</button>
+            <button class="go" id="omer-today">Today</button>
+          </div>
+        </div>
+        <div class="field"><label>Nusach</label>
+          <select id="omer-nusach"><option value="sfard">Sefard / after sunset</option><option value="ashkenaz">Show for the civil day</option></select></div>
+      </div>
+      <div id="omer-out" style="margin-top:14px"></div>
+      <p class="note">Sefiras HaOmer runs from the second night of Pesach through Shavuos. The count is for
+      the night beginning the selected civil date; say it after nightfall. Consult your Rav/luach for the bracha and practice.</p>
+    </div>
+  </section>
+
+  <!-- ================= MOLAD ================= -->
+  <section id="panel-molad" style="display:none">
+    <div class="card">
+      <h3 style="margin-top:0;color:var(--navy)">Molad &amp; Kiddush Levana · מולד</h3>
+      <div class="controls">
+        <div class="field"><label>Hebrew month</label><select id="molad-month"></select></div>
+        <div class="field"><label>Hebrew year</label><input type="number" id="molad-year" style="width:110px"></div>
+        <div class="field"><label>&nbsp;</label><button class="go" id="molad-go">Show</button></div>
+      </div>
+      <div id="molad-out" style="margin-top:14px"></div>
+      <p class="note">The molad is the calculated mean lunar conjunction announced before Rosh Chodesh.
+      Kiddush Levana is generally said from 3 (or 7) days after the molad until roughly the 15th of the
+      month; follow your minhag and your Rav.</p>
+    </div>
+  </section>
+
+  <!-- ================= SHIURIM ================= -->
+  <section id="panel-shiurim" style="display:none">
+    <div class="card">
+      <h3 style="margin-top:0;color:var(--navy)">Halachic measurements · שיעורי תורה</h3>
+      <p class="note" style="margin-top:0">Common shiurim in modern units. Two widely-cited opinions are
+      shown: <b>Rav Chaim Naeh</b> (the smaller, common Sephardi/many Ashkenazi practice) and the
+      <b>Chazon Ish</b> (the larger, machmir). Values are approximate and rounded.</p>
+      <div id="shiur-out"></div>
+      <div class="outbox" style="margin-top:14px">
+        <b>Convert an amount:</b>
+        <div class="controls" style="margin-top:8px">
+          <div class="field"><label>How many</label><input type="number" id="sh-qty" value="1" step="0.5" style="width:90px"></div>
+          <div class="field"><label>of</label>
+            <select id="sh-unit">
+              <option value="revi'is">revi'is (volume)</option>
+              <option value="kezayis">kezayis (volume)</option>
+              <option value="kebeitzah">kebeitzah (volume)</option>
+              <option value="tefach">tefach (length)</option>
+              <option value="amah">amah (length)</option>
+              <option value="mil">mil (distance)</option>
+            </select>
+          </div>
+          <div class="field"><label>&nbsp;</label><button class="go" id="sh-calc">Show</button></div>
+        </div>
+        <div id="sh-result" style="margin-top:8px"></div>
+      </div>
+      <p class="note"><b>These are approximations for reference only.</b> Shiurim are a matter of
+      significant halachic discussion; for any practical question — especially kzayis on Pesach,
+      fast-day amounts, and the challah shiur — follow your Rav and your family minhag.</p>
+    </div>
+  </section>
+
+  <!-- ================= GEMATRIA ================= -->
+  <section id="panel-gematria" style="display:none">
+    <div class="card">
+      <h3 style="margin-top:0;color:var(--navy)">Gematria calculator · גימטריא</h3>
+      <div class="controls">
+        <div class="field" style="flex:1;min-width:240px"><label>Hebrew word or phrase</label>
+          <input type="text" id="gm-in" dir="rtl" placeholder="למשל: אברהם" style="width:100%;font-size:1.3rem"></div>
+        <div class="field"><label>&nbsp;</label><button class="go" id="gm-go">Calculate</button></div>
+      </div>
+      <div id="gm-out" class="outbox" style="margin-top:12px"></div>
+      <p class="note">Standard (mispar hechrachi) counts final letters the same as regular. “With sofios”
+      uses the large values (ך=500 … ץ=900). Spaces, nikud and punctuation are ignored.</p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <hr>
+  <p><b>A word on reliability:</b> zmanim are computed astronomically from the coordinates shown (KosherZmanim engine); calendar, holiday and yahrzeit dates use the @hebcal/core engine. Minhagim differ and printed luchos may vary by a minute or two. For halacha l’maaseh — candle lighting, fast times, the first-year yahrzeit — consult your Rav and your community’s luach.</p>
+  <p class="note">Part of the <b>Computer Rabbis Offline Torah Drive</b>. Engines: KosherZmanim v0.9.0 (LGPL-2.1) &amp; @hebcal/core v6.6.0 (GPL-2.0). Calendar &amp; zmanim are perpetual astronomical/arithmetic calculations — they do not expire. See <a href="../SOURCES-AND-DATES.html">Sources &amp; data dates</a> and the <b>licenses</b> folder on this drive. Independent product; not affiliated with or endorsed by Hebcal, Sefaria, or the Otzaria project.</p>
+</footer>
+
+<script src="kosher-zmanim.min.js"></script>
+<script src="hebcal.bundle.min.js"></script>
+<script src="cities.js"></script>
+<script src="toolkit.js"></script>
+</body>
+</html>

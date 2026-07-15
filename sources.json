@@ -1,0 +1,22 @@
+{
+  "product": "ComputerRabbis Offline Torah Drive",
+  "buildDate": "2026-07-12",
+  "texts": {
+    "library": {
+      "packagedBy": "Otzaria project",
+      "packageUrl": "https://github.com/Sivan22/otzaria-library",
+      "release": "latest",
+      "snapshotDate": "2024-12-23",
+      "seforimCount": 5961,
+      "upstreams": ["Sefaria", "Dicta", "Hebrew Wikisource", "Ben-Yehuda Project", "Orayta"],
+      "note": "Currently Hebrew, single merged version per text. English translations and multiple manuscript versions are NOT yet included (planned via Sefaria-Export, see build/README)."
+    }
+  },
+  "engines": {
+    "hebcal-core": { "version": "6.6.0", "released": "2026-06-19", "license": "GPL-2.0", "url": "https://github.com/hebcal/hebcal-es6" },
+    "kosher-zmanim": { "version": "0.9.0", "released": "2025-03-23", "license": "LGPL-2.1", "url": "https://github.com/BehindTheMath/KosherZmanim" }
+  },
+  "apps": {
+    "otzaria": { "release": "v0.2.7-dev-110", "license": "Unlicense", "url": "https://github.com/sivan22/otzaria", "note": "Optional full-app reader with instant full-text search. The platform also runs with no app at all via the browser reader." }
+  }
+}
