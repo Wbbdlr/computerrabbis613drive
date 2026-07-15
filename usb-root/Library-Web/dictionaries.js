@@ -185,6 +185,22 @@ window.LEX = window.LEX || {};
     buildWelcome();
     var inp = $("#lex-in");
     inp.addEventListener("input", function () { search(this.value); });
+    // Cross-reference links inside entries (e.g. Jastrow "refLink" links) point at
+    // online Sefaria paths that don't exist offline. Intercept them and turn each
+    // into an in-dictionary lookup of the referenced word instead of a dead navigation.
+    $("#lex-entry").addEventListener("click", function (e) {
+      var a = e.target.closest("a");
+      if (!a || !$("#lex-entry").contains(a)) return;
+      e.preventDefault();
+      var word = (a.getAttribute("data-ref") || a.textContent || "").trim();
+      // data-ref looks like "Jastrow, הָבַב 1" — strip the dictionary prefix + trailing segment number
+      var comma = word.indexOf(",");
+      if (comma !== -1 && a.getAttribute("data-ref")) word = word.slice(comma + 1).replace(/\s+\d+$/, "").trim();
+      if (!norm(word)) return;
+      inp.value = word;
+      inp.focus();
+      search(word);
+    });
     inp.focus();
   };
 

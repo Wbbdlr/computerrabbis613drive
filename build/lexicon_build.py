@@ -36,7 +36,10 @@ def searchkey(hw):
 
 
 def load_entries(path):
+    # Dedupe by headword — a resumed/parallel crawl can append the same entry
+    # more than once to the raw .jsonl. Keep first occurrence, preserve order.
     entries = []
+    seen = set()
     if not os.path.exists(path):
         return entries
     with open(path, encoding="utf-8") as f:
@@ -48,7 +51,9 @@ def load_entries(path):
                 e = json.loads(line)
             except Exception:
                 continue
-            if e.get("html"):
+            hw = e.get("hw")
+            if e.get("html") and hw not in seen:
+                seen.add(hw)
                 entries.append(e)
     return entries
 
