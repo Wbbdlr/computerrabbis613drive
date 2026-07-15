@@ -13,6 +13,9 @@ It contains:
 - **🕰️ A Jewish Calendar & Zmanim Toolkit** (`Zmanim/`) — zmanim for any location, Hebrew↔civil date
   conversion, holidays for any year, a yahrzeit calculator, printable luchos, and **.ics calendar
   export** — powered by `@hebcal/core` and `KosherZmanim`, entirely offline and valid in perpetuity.
+- **📖 Offline dictionaries** (`Library-Web/dictionaries.html`) — unified lookup across **Jastrow**
+  (Talmudic Aramaic & Hebrew), **BDB** (Biblical Hebrew & Aramaic), and the **Klein** etymological
+  dictionary — ~34,000 entries, searchable with or without nikud.
 - A branded **START-HERE** page and a **Sources & Dates** page documenting exactly what's inside and
   when it was captured.
 
