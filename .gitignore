@@ -17,6 +17,9 @@ usb-root/Library-Web/tree-bilingual.js
 usb-root/Library-Web/dictionaries/
 usb-root/Library-Web/jastrow/
 
+# Python cache
+__pycache__/
+
 # Raw downloads & scratch
 downloads/
 *.output
