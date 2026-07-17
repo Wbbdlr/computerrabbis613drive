@@ -29,7 +29,6 @@ window.CR = window.CR || {};
       }
     }
   }
-  // Parse in an inert <template> (no resource loads, no script execution), sanitize, then attach.
   function setHTML(el, html) {
     var tpl = document.createElement("template");
     tpl.innerHTML = html == null ? "" : String(html);
@@ -55,7 +54,9 @@ window.CR = window.CR || {};
   }
 
   // ---------- settings ----------
-  var settings = { fontSize: 20, nikud: true, lastBook: null, lang: "both", theme: "light", font: "frankruehl" };
+  var HL_COLORS = ["#ffe08a", "#a6e3a1", "#9ec5ff", "#f6a5c0", "#f6b26b", "#d5b3ff"];
+  var settings = { fontSize: 20, nikud: true, lastBook: null, lang: "both", theme: "light",
+    font: "frankruehl", textColor: null, bgColor: null, hlColor: HL_COLORS[0] };
   Object.assign(settings, load("cr-reader", {}));
   function persist() { store("cr-reader", settings); }
   var pins = load("cr-pins", []);
@@ -95,11 +96,12 @@ window.CR = window.CR || {};
     CR.tree.forEach(function (n) { host.appendChild(makeNode(n, 0)); });
   }
 
-  // ---------- home view (pinned + recent) ----------
+  // ---------- home view (saved + recent) ----------
   function renderHome() {
     curId = null; curData = null;
-    $("#toc-btn").style.display = $("#langbar").style.display = "none";
-    ["btn-highlight", "btn-pin", "btn-print"].forEach(function (i) { $("#" + i).style.display = "none"; });
+    document.body.classList.remove("has-book");
+    $("#toc-btn").style.display = "none";
+    $("#langbar").style.display = "none";
     var a = $(".book-item.active"); if (a) a.classList.remove("active");
     var pane = $("#reader"); pane.innerHTML = "";
     var w = cE("div", "home-wrap");
@@ -119,7 +121,7 @@ window.CR = window.CR || {};
       }
       w.appendChild(s);
     }
-    section("Pinned seforim", pins, "Open a sefer and press “Pin” to keep it here for quick access.");
+    section("Saved seforim", pins, "Open a sefer and press “Save” to keep it here for quick access.");
     section("Recently viewed", recent.slice(0, 16), "Seforim you open will appear here.");
     pane.appendChild(w);
   }
@@ -127,24 +129,26 @@ window.CR = window.CR || {};
   // ---------- open a book ----------
   function openBook(id) {
     curId = id;
+    hideHlMenu(); hideLookup();
     var pane = $("#reader");
     pane.innerHTML = "<div class='muted' style='padding:24px'>Loading…</div>";
     CR.load(id, function (data) {
       if (!data) { pane.innerHTML = "<div class='errbox'>Could not load this text from the drive.</div>"; return; }
       settings.lastBook = id; persist();
       curData = data;
+      document.body.classList.add("has-book");
       recent = [id].concat(recent.filter(function (x) { return x !== id; })).slice(0, 24); store("cr-recent", recent);
       var art = cE("article", "book");
       art.style.fontSize = settings.fontSize + "px";
-      art.classList.toggle("no-nikud", !settings.nikud);
-      if (data.bi) { art.appendChild(renderBilingual(data)); $("#langbar").style.display = data.en ? "flex" : "none"; }
-      else { var c = cE("div"); setHTML(c, data.h); art.appendChild(c); $("#langbar").style.display = "none"; }
+      if (data.bi) { art.appendChild(renderBilingual(data)); }
+      else { var c = cE("div"); setHTML(c, data.h); art.appendChild(c); }
       pane.innerHTML = "";
       if (data.c) pane.appendChild(cE("div", "crumb", data.c));
       pane.appendChild(art);
+      if (!settings.nikud) stripNikudDOM(art);
       applyFont();
       pane.scrollTop = 0;
-      ["btn-highlight", "btn-pin", "btn-print"].forEach(function (i) { $("#" + i).style.display = "inline-block"; });
+      buildLangbar(!!(data.bi && data.en));
       updatePinBtn();
       var prev = $(".book-item.active"); if (prev) prev.classList.remove("active");
       var cur = document.querySelector('.book-item[data-id="' + id + '"]'); if (cur) cur.classList.add("active");
@@ -155,7 +159,6 @@ window.CR = window.CR || {};
   }
 
   function renderBilingual(data) {
-    // Build one HTML string (labels/title escaped; segment content sanitized), parse once.
     var parts = ["<h1>" + esc(data.t) + "</h1>"];
     if (data.v) parts.push('<div class="tr-credit">' + esc("English translation: " + data.v) + "</div>");
     data.sec.forEach(function (sec, si) {
@@ -171,10 +174,27 @@ window.CR = window.CR || {};
     setHTML(wrap, parts.join(""));
     return wrap;
   }
+
+  // ---------- language toggle ----------
+  var LANGS = [["he", "עברית"], ["both", "Both"], ["side", "Side by side"], ["en", "English"]];
+  function buildLangbar(hasEn) {
+    var lb = $("#langbar"); lb.innerHTML = "";
+    if (!hasEn) { lb.style.display = "none"; return; }
+    lb.style.display = "flex";
+    LANGS.forEach(function (o) {
+      var b = cE("button", null, o[1]); b.setAttribute("data-lang", o[0]);
+      b.addEventListener("click", function () { setLang(o[0]); });
+      lb.appendChild(b);
+    });
+    syncLangbar();
+  }
   function setLang(l) {
     settings.lang = l; persist();
-    var w = document.querySelector(".bi-wrap"); if (w) w.className = "bi-wrap lang-" + l;
-    document.querySelectorAll("#langbar button").forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-lang") === l); });
+    var w = $(".bi-wrap"); if (w) w.className = "bi-wrap lang-" + l;
+    syncLangbar();
+  }
+  function syncLangbar() {
+    document.querySelectorAll("#langbar button").forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-lang") === settings.lang); });
   }
 
   // ---------- table of contents ----------
@@ -187,7 +207,7 @@ window.CR = window.CR || {};
       if (entries.length && entries[0].lvl === 1) entries.shift();
     }
     if (entries.length < 2) { $("#toc-btn").style.display = "none"; toc.style.display = "none"; return; }
-    $("#toc-btn").style.display = "inline-block";
+    $("#toc-btn").style.display = "inline-flex";
     entries.forEach(function (e) {
       var it = cE("div", "toc-item lvl" + e.lvl, e.el.textContent);
       it.addEventListener("click", function () { e.el.scrollIntoView({ block: "start" }); toc.style.display = "none"; });
@@ -233,14 +253,28 @@ window.CR = window.CR || {};
     if (first) first.scrollIntoView({ block: "center" });
   }
 
-  // ---------- highlights + notes (offset-based, persisted) ----------
+  // ---------- nikud handling ----------
+  function isNikud(ch) { return ch >= "֑" && ch <= "ׇ"; }
+  function stripNikud(s) { return s.replace(/[֑-ׇ]/g, ""); }
+  function mapStrippedToRaw(raw, sIdx) {
+    var count = 0, i = 0;
+    for (; i < raw.length && count < sIdx; i++) if (!isNikud(raw[i])) count++;
+    while (i < raw.length && isNikud(raw[i])) i++;
+    return i;
+  }
+  function stripNikudDOM(root) {
+    var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), n, nodes = [];
+    while ((n = w.nextNode())) nodes.push(n);
+    nodes.forEach(function (nd) { var s = stripNikud(nd.nodeValue); if (s !== nd.nodeValue) nd.nodeValue = s; });
+  }
+
+  // ---------- highlights + notes (offset-based, nikud-independent, colored) ----------
   function hlKey(id) { return "cr-hl-" + id; }
   function textOffset(root, container, offset) {
-    // char offset within root's text, measured via a Range (handles text OR element containers)
     var r = document.createRange();
     r.setStart(root, 0);
     try { r.setEnd(container, offset); } catch (e) { return 0; }
-    return r.toString().length;
+    return stripNikud(r.toString()).length;
   }
   function selectionRange(root) {
     var sel = window.getSelection(); if (!sel || !sel.rangeCount) return null;
@@ -251,59 +285,117 @@ window.CR = window.CR || {};
     if (start > end) { var t = start; start = end; end = t; }
     return end > start ? { start: start, end: end } : null;
   }
-  function wrapRange(root, start, end, idx, note) {
+  function wrapRange(root, start, end, idx, hl) {
     var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), pos = 0, n, jobs = [];
     while ((n = w.nextNode())) {
-      var len = n.nodeValue.length, ns = pos, ne = pos + len;
-      if (ne > start && ns < end && n.parentNode.tagName !== "MARK") jobs.push({ node: n, s: Math.max(start, ns) - ns, e: Math.min(end, ne) - ns });
+      var raw = n.nodeValue, len = stripNikud(raw).length, ns = pos, ne = pos + len;
+      if (ne > start && ns < end && n.parentNode.tagName !== "MARK") {
+        var s = mapStrippedToRaw(raw, Math.max(start, ns) - ns), e = mapStrippedToRaw(raw, Math.min(end, ne) - ns);
+        jobs.push({ node: n, s: s, e: e });
+      }
       pos = ne; if (pos >= end) break;
     }
     jobs.forEach(function (j) {
       var mid = j.node.splitText(j.s); mid.splitText(j.e - j.s);
-      var mk = document.createElement("mark"); mk.className = "hl" + (note ? " has-note" : ""); mk.setAttribute("data-hl", idx);
+      var mk = document.createElement("mark"); mk.className = "hl" + (hl.note ? " has-note" : ""); mk.setAttribute("data-hl", idx);
+      mk.style.background = hl.color || HL_COLORS[0];
       mid.parentNode.replaceChild(mk, mid); mk.appendChild(mid);
-      mk.addEventListener("click", function (ev) { ev.stopPropagation(); openNote(idx, mk); });
+      mk.addEventListener("click", function (ev) { ev.stopPropagation(); openHlMenu(idx, mk); });
     });
   }
   function applyHighlights(art) {
     var hls = load(hlKey(curId), []);
-    hls.forEach(function (h, i) { if (h) wrapRange(art, h.start, h.end, i, h.note); });
+    hls.forEach(function (h, i) { if (h) wrapRange(art, h.start, h.end, i, h); });
   }
   function addHighlight() {
-    var art = $(".book, .bi-wrap"); if (!art) return;
-    var r = selectionRange(art.closest(".book") || art); if (!r) { alert("Select some text in the sefer first, then press Highlight."); return; }
-    var root = $("article.book");
+    var root = $("article.book"); if (!root) return;
+    var r = selectionRange(root); if (!r) { flash("Select some text in the sefer first, then press Highlight."); return; }
     var hls = load(hlKey(curId), []);
-    hls.push({ start: r.start, end: r.end, note: "" });
+    hls.push({ start: r.start, end: r.end, note: "", color: settings.hlColor });
     store(hlKey(curId), hls);
-    wrapRange(root, r.start, r.end, hls.length - 1, "");
+    var idx = hls.length - 1;
+    wrapRange(root, r.start, r.end, idx, hls[idx]);
     window.getSelection().removeAllRanges();
-  }
-  var noteIdx = -1;
-  function openNote(idx, mk) {
-    noteIdx = idx;
-    var hls = load(hlKey(curId), []); var h = hls[idx]; if (!h) return;
-    var pop = $("#note-pop"); $("#note-text").value = h.note || "";
-    var rect = mk.getBoundingClientRect();
-    pop.style.top = (rect.bottom + window.scrollY + 4) + "px";
-    pop.style.left = Math.min(rect.left, window.innerWidth - 320) + "px";
-    pop.style.display = "block"; $("#note-text").focus();
-  }
-  function saveNote() {
-    var hls = load(hlKey(curId), []); if (!hls[noteIdx]) return;
-    hls[noteIdx].note = $("#note-text").value; store(hlKey(curId), hls);
-    $("#note-pop").style.display = "none";
-    var mk = document.querySelector('mark.hl[data-hl="' + noteIdx + '"]'); if (mk) mk.classList.toggle("has-note", !!hls[noteIdx].note);
-  }
-  function delNote() {
-    var hls = load(hlKey(curId), []); if (!hls[noteIdx]) return;
-    hls[noteIdx] = null; store(hlKey(curId), hls);
-    $("#note-pop").style.display = "none";
-    if (curId != null) openBook(curId); // re-render to drop the mark
+    hideLookup();
+    var mk = document.querySelector('mark.hl[data-hl="' + idx + '"]');
+    if (mk) openHlMenu(idx, mk);
   }
 
-  // ---------- pins ----------
-  function updatePinBtn() { var p = pins.indexOf(curId) !== -1; $("#btn-pin").textContent = p ? "Unpin" : "Pin"; $("#btn-pin").classList.toggle("on", p); }
+  // ---------- highlight menu (color swatches + note + remove) ----------
+  var hlIdx = -1;
+  function buildHlSwatches() {
+    var box = $("#hl-swatches"); box.innerHTML = "";
+    HL_COLORS.forEach(function (c) {
+      var sw = cE("span", "sw"); sw.style.background = c; sw.setAttribute("data-c", c);
+      sw.addEventListener("click", function () { setHlColor(c); });
+      box.appendChild(sw);
+    });
+  }
+  function openHlMenu(idx, mk) {
+    hlIdx = idx;
+    var hls = load(hlKey(curId), []); var h = hls[idx]; if (!h) return;
+    $("#hl-note").value = h.note || "";
+    document.querySelectorAll("#hl-swatches .sw").forEach(function (s) { s.classList.toggle("sel", s.getAttribute("data-c") === (h.color || HL_COLORS[0])); });
+    var menu = $("#hl-menu");
+    var main = $(".main").getBoundingClientRect();
+    var rect = mk.getBoundingClientRect();
+    menu.style.display = "block";
+    var top = rect.bottom - main.top + 6, left = rect.left - main.left;
+    menu.style.top = top + "px";
+    menu.style.left = Math.max(6, Math.min(left, main.width - 244)) + "px";
+    $("#hl-note").focus();
+  }
+  function hideHlMenu() { var m = $("#hl-menu"); if (m) m.style.display = "none"; hlIdx = -1; }
+  function setHlColor(c) {
+    settings.hlColor = c; persist();
+    document.querySelectorAll("#hl-swatches .sw").forEach(function (s) { s.classList.toggle("sel", s.getAttribute("data-c") === c); });
+    if (hlIdx < 0) return;
+    var hls = load(hlKey(curId), []); if (!hls[hlIdx]) return;
+    hls[hlIdx].color = c; store(hlKey(curId), hls);
+    document.querySelectorAll('mark.hl[data-hl="' + hlIdx + '"]').forEach(function (m) { m.style.background = c; });
+  }
+  function saveHlNote() {
+    if (hlIdx < 0) { hideHlMenu(); return; }
+    var hls = load(hlKey(curId), []); if (!hls[hlIdx]) { hideHlMenu(); return; }
+    hls[hlIdx].note = $("#hl-note").value; store(hlKey(curId), hls);
+    document.querySelectorAll('mark.hl[data-hl="' + hlIdx + '"]').forEach(function (m) { m.classList.toggle("has-note", !!hls[hlIdx].note); });
+    hideHlMenu();
+  }
+  function removeHl() {
+    if (hlIdx < 0) { hideHlMenu(); return; }
+    var hls = load(hlKey(curId), []); if (!hls[hlIdx]) { hideHlMenu(); return; }
+    hls[hlIdx] = null; store(hlKey(curId), hls);
+    hideHlMenu();
+    if (curId != null) openBook(curId);
+  }
+
+  // ---------- select-to-look-up (dictionary) ----------
+  function firstHebrewWord(s) { var m = (s || "").match(/[א-ת֑-ׇ]{2,}/); return m ? m[0] : ""; }
+  function showLookup() {
+    setTimeout(function () {
+      var sel = window.getSelection();
+      var txt = sel && sel.rangeCount ? sel.toString().trim() : "";
+      var word = firstHebrewWord(txt);
+      var fab = $("#lookup-fab");
+      if (word && txt.length <= 60 && sel.rangeCount) {
+        var main = $(".main").getBoundingClientRect();
+        var rect = sel.getRangeAt(0).getBoundingClientRect();
+        fab.style.display = "block";
+        fab.style.top = (rect.bottom - main.top + 6) + "px";
+        fab.style.left = Math.max(6, Math.min(rect.left - main.left, main.width - 110)) + "px";
+        fab._word = word;
+      } else { fab.style.display = "none"; }
+    }, 10);
+  }
+  function hideLookup() { var f = $("#lookup-fab"); if (f) f.style.display = "none"; }
+
+  // ---------- saved seforim (formerly "pins") ----------
+  function updatePinBtn() {
+    var p = pins.indexOf(curId) !== -1;
+    $("#pin-label").textContent = p ? "Saved" : "Save";
+    $("#btn-pin").classList.toggle("on", p);
+    $("#btn-pin").title = p ? "Remove this sefer from your Home page" : "Save this sefer to your Home page";
+  }
   function togglePin() {
     if (curId == null) return;
     var i = pins.indexOf(curId);
@@ -311,23 +403,48 @@ window.CR = window.CR || {};
     pins = pins.slice(0, 40); store("cr-pins", pins); updatePinBtn();
   }
 
-  // ---------- theme / fullscreen / sidebar / settings ----------
-  var FONTS = { frankruehl: '"FrankRuehl","NotoHe",serif', georgia: 'Georgia,"Times New Roman",serif', arial: 'Arial,Helvetica,sans-serif', times: '"Times New Roman",Times,serif', noto: '"NotoHe","FrankRuehl",serif' };
+  // ---------- theme / fonts / colors ----------
+  var FONTS = {
+    frankruehl: '"FrankRuehl","NotoHe",serif', noto: '"NotoHe","FrankRuehl",serif',
+    david: '"David Libre","David","FrankRuehl","NotoHe",serif', narkisim: '"Narkisim","FrankRuehl","NotoHe",serif',
+    times: '"Times New Roman",Times,"FrankRuehl",serif', georgia: 'Georgia,"Times New Roman",serif',
+    arial: 'Arial,Helvetica,sans-serif', tahoma: 'Tahoma,Arial,sans-serif'
+  };
   function applyTheme() { document.body.setAttribute("data-theme", settings.theme); }
   function applyFont() { var f = FONTS[settings.font] || FONTS.frankruehl; document.querySelectorAll("article.book, .bi-wrap").forEach(function (el) { el.style.fontFamily = f; }); }
-  function setTheme(t) { settings.theme = t; persist(); applyTheme(); syncSettingsUI(); }
+  function applyReadColors() {
+    var rd = $("#reader"); if (!rd) return;
+    if (settings.textColor) rd.style.setProperty("--readink", settings.textColor); else rd.style.removeProperty("--readink");
+    if (settings.bgColor) rd.style.setProperty("--readbg", settings.bgColor); else rd.style.removeProperty("--readbg");
+  }
+  function setTheme(t) { settings.theme = t; settings.textColor = null; settings.bgColor = null; persist(); applyTheme(); applyReadColors(); syncSettingsUI(); }
   function toggleFull() { if (!document.fullscreenElement) { (document.documentElement.requestFullscreen || function () {}).call(document.documentElement); } else { document.exitFullscreen && document.exitFullscreen(); } }
+
+  var TEXT_SWATCHES = ["#22252b", "#000000", "#433422", "#1b2a4a", "#3a2f22", "#e2e2e2"];
+  var BG_SWATCHES = ["#ffffff", "#faf7f0", "#f4ecd8", "#eaf3ea", "#e9eef6", "#1c2028"];
+  function buildColorSwatches() {
+    var t = $("#sp-textswatches"); t.innerHTML = "";
+    TEXT_SWATCHES.forEach(function (c) { var s = cE("span", "sp-sw"); s.style.background = c; s.title = c; s.addEventListener("click", function () { settings.textColor = c; persist(); applyReadColors(); syncSettingsUI(); }); t.appendChild(s); });
+    var b = $("#sp-bgswatches"); b.innerHTML = "";
+    BG_SWATCHES.forEach(function (c) { var s = cE("span", "sp-sw"); s.style.background = c; s.title = c; s.addEventListener("click", function () { settings.bgColor = c; persist(); applyReadColors(); syncSettingsUI(); }); b.appendChild(s); });
+  }
   function syncSettingsUI() {
     document.querySelectorAll(".sp-theme").forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-theme") === settings.theme); });
     var sel = $("#sp-font"); if (sel) sel.value = settings.font || "frankruehl";
     var fs = $("#sp-fontsize-val"); if (fs) fs.textContent = settings.fontSize + "px";
+    var rd = $("#reader"); var cs = rd ? getComputedStyle(rd) : null;
+    if ($("#sp-textcolor") && cs) $("#sp-textcolor").value = settings.textColor || hexOf(cs.getPropertyValue("--readink")) || "#22252b";
+    if ($("#sp-bgcolor") && cs) $("#sp-bgcolor").value = settings.bgColor || hexOf(cs.getPropertyValue("--readbg")) || "#ffffff";
   }
+  function hexOf(v) { v = (v || "").trim(); return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v) ? v : ""; }
   function toggleSettings() {
     var p = $("#settings-panel"); if (!p) return;
-    var show = p.style.display === "none";
+    var show = p.style.display !== "block";
     p.style.display = show ? "block" : "none";
     if (show) syncSettingsUI();
   }
+
+  // ---------- data export / import ----------
   function exportData() {
     var data = { _cr_export: true, _date: new Date().toISOString() };
     for (var i = 0; i < localStorage.length; i++) {
@@ -346,14 +463,21 @@ window.CR = window.CR || {};
     reader.onload = function () {
       try {
         var data = JSON.parse(reader.result);
-        if (!data._cr_export) { alert("This does not appear to be a Computer Rabbis data file."); return; }
+        if (!data._cr_export) { flash("This does not appear to be a Computer Rabbis data file."); return; }
         var count = 0;
         for (var k in data) { if (k.indexOf("cr-") === 0) { localStorage.setItem(k, data[k]); count++; } }
-        alert("Imported " + count + " items (notes, highlights, pins, settings). Reloading...");
-        location.reload();
-      } catch (e) { alert("Could not read this file: " + e.message); }
+        flash("Imported " + count + " items. Reloading…");
+        setTimeout(function () { location.reload(); }, 700);
+      } catch (e) { flash("Could not read this file: " + e.message); }
     };
     reader.readAsText(file);
+  }
+
+  function flash(msg) {
+    var f = $("#cr-flash");
+    if (!f) { f = cE("div"); f.id = "cr-flash"; f.style.cssText = "position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 16px;border-radius:8px;z-index:200;box-shadow:0 6px 20px rgba(0,0,0,.3);font-size:.9rem"; document.body.appendChild(f); }
+    f.textContent = msg; f.style.display = "block";
+    clearTimeout(f._t); f._t = setTimeout(function () { f.style.display = "none"; }, 2600);
   }
 
   // ---------- init ----------
@@ -366,49 +490,91 @@ window.CR = window.CR || {};
 
   document.addEventListener("DOMContentLoaded", function () {
     applyTheme();
+    applyReadColors();
+    buildHlSwatches();
+    buildColorSwatches();
     $("#fontsize").value = settings.fontSize;
     $("#nikud").checked = settings.nikud;
     syncSettingsUI();
+
+    // title search (persistent, collapsible)
     $("#search").addEventListener("input", function () { runSearch(this.value); });
+    var sw = $("#search-wrap"), searchInp = $("#search");
+    function setSearchOpen(open) {
+      sw.classList.toggle("open", open);
+      if (open) searchInp.focus(); else { searchInp.value = ""; $("#searchres").style.display = "none"; }
+    }
+    $("#btn-search").addEventListener("click", function (e) {
+      e.stopPropagation();
+      setSearchOpen(!sw.classList.contains("open"));
+    });
+
+    // in-book find
     $("#inbook").addEventListener("input", function () { inBookFind(this.value); });
-    document.querySelectorAll("#langbar button").forEach(function (b) { b.addEventListener("click", function () { setLang(b.getAttribute("data-lang")); }); });
+
+    // toc
     $("#toc-btn").addEventListener("click", function (e) { e.stopPropagation(); var t = $("#toc"); t.style.display = t.style.display === "block" ? "none" : "block"; });
+
+    // sidebar toggle (button + arrow)
+    function toggleSidebar() { document.body.classList.toggle("nosidebar"); }
+    $("#btn-sidebar").addEventListener("click", toggleSidebar);
+    var arrow = $("#sidebar-arrow"); if (arrow) arrow.addEventListener("click", toggleSidebar);
+
+    // settings
+    $("#btn-settings").addEventListener("click", function (e) { e.stopPropagation(); toggleSettings(); });
+    document.querySelectorAll(".sp-theme").forEach(function (b) { b.addEventListener("click", function () { setTheme(b.getAttribute("data-theme")); }); });
+    $("#sp-font").addEventListener("change", function () { settings.font = this.value; persist(); applyFont(); });
     $("#fontsize").addEventListener("input", function () {
       settings.fontSize = +this.value; persist();
       var a = $(".book"); if (a) a.style.fontSize = settings.fontSize + "px";
       var fs = $("#sp-fontsize-val"); if (fs) fs.textContent = settings.fontSize + "px";
     });
-    $("#nikud").addEventListener("change", function () { settings.nikud = this.checked; persist(); var a = $(".book"); if (a) a.classList.toggle("no-nikud", !settings.nikud); });
-    // sidebar toggle — both button and arrow
-    function toggleSidebar() { document.body.classList.toggle("nosidebar"); }
-    $("#btn-sidebar").addEventListener("click", toggleSidebar);
-    var arrow = $("#sidebar-arrow"); if (arrow) arrow.addEventListener("click", toggleSidebar);
-    // settings panel
-    $("#btn-settings").addEventListener("click", function (e) { e.stopPropagation(); toggleSettings(); });
-    document.querySelectorAll(".sp-theme").forEach(function (b) { b.addEventListener("click", function () { setTheme(b.getAttribute("data-theme")); }); });
-    var spFont = $("#sp-font");
-    if (spFont) spFont.addEventListener("change", function () { settings.font = this.value; persist(); applyFont(); });
-    // data export/import
-    var btnExport = $("#btn-export"); if (btnExport) btnExport.addEventListener("click", exportData);
-    var btnImport = $("#btn-import");
+    $("#nikud").addEventListener("change", function () { settings.nikud = this.checked; persist(); if (curId != null) openBook(curId); });
+    $("#sp-textcolor").addEventListener("input", function () { settings.textColor = this.value; persist(); applyReadColors(); });
+    $("#sp-bgcolor").addEventListener("input", function () { settings.bgColor = this.value; persist(); applyReadColors(); });
+    $("#sp-textreset").addEventListener("click", function () { settings.textColor = null; persist(); applyReadColors(); syncSettingsUI(); });
+    $("#sp-bgreset").addEventListener("click", function () { settings.bgColor = null; persist(); applyReadColors(); syncSettingsUI(); });
+
+    // export / import
+    $("#btn-export").addEventListener("click", exportData);
     var impFile = $("#import-file");
-    if (btnImport && impFile) {
-      btnImport.addEventListener("click", function () { impFile.click(); });
-      impFile.addEventListener("change", function () { if (this.files[0]) importData(this.files[0]); });
-    }
+    $("#btn-import").addEventListener("click", function () { impFile.click(); });
+    impFile.addEventListener("change", function () { if (this.files[0]) importData(this.files[0]); });
+
+    // reader actions
     $("#btn-full").addEventListener("click", toggleFull);
     $("#btn-home").addEventListener("click", renderHome);
-    $("#btn-highlight").addEventListener("click", addHighlight);
+    $("#btn-highlight").addEventListener("click", function (e) { e.stopPropagation(); addHighlight(); });
     $("#btn-pin").addEventListener("click", togglePin);
     $("#btn-print").addEventListener("click", function () { window.print(); });
-    $("#note-save").addEventListener("click", saveNote);
-    $("#note-del").addEventListener("click", delNote);
-    document.addEventListener("click", function (e) {
-      if (!e.target.closest(".searchbox")) $("#searchres").style.display = "none";
-      if (!e.target.closest("#toc") && e.target.id !== "toc-btn") $("#toc").style.display = "none";
-      if (!e.target.closest("#note-pop") && !(e.target.tagName === "MARK" && e.target.classList.contains("hl"))) $("#note-pop").style.display = "none";
-      if (!e.target.closest("#settings-panel") && e.target.id !== "btn-settings") { var sp = $("#settings-panel"); if (sp) sp.style.display = "none"; }
+
+    // highlight menu
+    $("#hl-save").addEventListener("click", saveHlNote);
+    $("#hl-remove").addEventListener("click", removeHl);
+
+    // dictionary panel
+    $("#btn-dict").addEventListener("click", function () { if (window.CRDict) CRDict.togglePanel(); });
+    $("#dict-close").addEventListener("click", function () { if (window.CRDict) CRDict.closePanel(); });
+    $("#lookup-btn").addEventListener("click", function () {
+      var word = $("#lookup-fab")._word;
+      hideLookup();
+      if (word && window.CRDict) CRDict.lookup(word);
     });
+
+    // selection -> look-up affordance
+    var reader = $("#reader");
+    reader.addEventListener("mouseup", showLookup);
+    reader.addEventListener("mousedown", function (e) { if (!e.target.closest("#lookup-fab")) hideLookup(); });
+    reader.addEventListener("scroll", function () { hideLookup(); hideHlMenu(); });
+
+    // global click: close popovers
+    document.addEventListener("click", function (e) {
+      if (!e.target.closest("#search-wrap")) $("#searchres").style.display = "none";
+      if (!e.target.closest("#toc") && e.target.id !== "toc-btn" && !e.target.closest("#toc-btn")) $("#toc").style.display = "none";
+      if (!e.target.closest("#hl-menu") && !(e.target.tagName === "MARK" && e.target.classList.contains("hl"))) hideHlMenu();
+      if (!e.target.closest("#settings-panel") && e.target.id !== "btn-settings" && !e.target.closest("#btn-settings")) { var sp = $("#settings-panel"); if (sp) sp.style.display = "none"; }
+    });
+
     if (CR.tree.length) CR.ready();
     if (settings.lastBook && CR._exists(settings.lastBook)) openBook(settings.lastBook); else renderHome();
   });
