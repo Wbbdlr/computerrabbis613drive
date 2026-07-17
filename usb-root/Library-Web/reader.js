@@ -55,13 +55,40 @@ window.CR = window.CR || {};
 
   // ---------- settings ----------
   var HL_COLORS = ["#ffe08a", "#a6e3a1", "#9ec5ff", "#f6a5c0", "#f6b26b", "#d5b3ff"];
-  var settings = { fontSize: 20, nikud: true, lastBook: null, lang: "both", theme: "light",
+  var settings = { fontSize: 20, nikud: true, lang: "both", theme: "light",
     font: "frankruehl", textColor: null, bgColor: null, hlColor: HL_COLORS[0] };
   Object.assign(settings, load("cr-reader", {}));
   function persist() { store("cr-reader", settings); }
   var pins = load("cr-pins", []);
   var recent = load("cr-recent", []);
-  var curData = null, curId = null;
+
+  // ---------- research tabs (up to 2 shown at once: left pane, optional right/split pane) ----------
+  var tabs = load("cr-tabs", null);
+  if (!tabs || !tabs.length) tabs = [{ id: 1, bookId: null, title: "Home" }];
+  var nextTabId = load("cr-next-tab-id", 2);
+  var leftTabId = load("cr-left-tab", tabs[0].id);
+  var rightTabId = load("cr-right-tab", null);
+  if (!getTab(leftTabId)) leftTabId = tabs[0].id;
+  if (rightTabId != null && (!getTab(rightTabId) || rightTabId === leftTabId)) rightTabId = null;
+  var focusedSide = "left";
+
+  function getTab(id) { for (var i = 0; i < tabs.length; i++) if (tabs[i].id === id) return tabs[i]; return null; }
+  function focusedTabId() { return focusedSide === "right" ? rightTabId : leftTabId; }
+  function focusedTab() { return getTab(focusedTabId()); }
+  function paneEl(side) { return side === "right" ? $("#reader2") : $("#reader"); }
+  function focusedContainer() { return paneEl(focusedSide); }
+  function persistTabs() {
+    store("cr-tabs", tabs); store("cr-next-tab-id", nextTabId);
+    store("cr-left-tab", leftTabId); store("cr-right-tab", rightTabId);
+  }
+  function tabTitle(tab) { return tab.bookId == null ? "Home" : (tab.title || titleOf(tab.bookId)); }
+
+  function setFocusedSide(side) {
+    if (focusedSide === side) return;
+    focusedSide = side;
+    document.querySelectorAll(".pane").forEach(function (p) { p.classList.toggle("focused", p.getAttribute("data-side") === side); });
+    syncToolbarForFocused();
+  }
 
   // ---------- sidebar tree ----------
   function makeNode(node, depth) {
@@ -96,14 +123,82 @@ window.CR = window.CR || {};
     CR.tree.forEach(function (n) { host.appendChild(makeNode(n, 0)); });
   }
 
-  // ---------- home view (saved + recent) ----------
-  function renderHome() {
-    curId = null; curData = null;
-    document.body.classList.remove("has-book");
-    $("#toc-btn").style.display = "none";
-    $("#langbar").style.display = "none";
-    var a = $(".book-item.active"); if (a) a.classList.remove("active");
-    var pane = $("#reader"); pane.innerHTML = "";
+  // ---------- tab strip ----------
+  function renderTabStrip() {
+    var bar = $("#tabstrip"); if (!bar) return;
+    bar.innerHTML = "";
+    tabs.forEach(function (tab) {
+      var chip = cE("div", "tab-chip");
+      if (tab.id === leftTabId) chip.classList.add("side-left");
+      if (tab.id === rightTabId) chip.classList.add("side-right");
+      chip.appendChild(cE("span", "tt", tabTitle(tab)));
+      var x = cE("span", "x", "✕"); x.title = "Close tab";
+      x.addEventListener("click", function (e) { e.stopPropagation(); closeTab(tab.id); });
+      chip.appendChild(x);
+      chip.addEventListener("click", function () { assignTabToFocusedSide(tab.id); });
+      bar.appendChild(chip);
+    });
+    var add = cE("button", "tab-add", "+ New tab");
+    add.title = "Open a new research tab";
+    add.addEventListener("click", newTab);
+    bar.appendChild(add);
+  }
+  function assignTabToFocusedSide(tabId) {
+    if (focusedSide === "right") { if (tabId === leftTabId) return; rightTabId = tabId; }
+    else { if (tabId === rightTabId) rightTabId = null; leftTabId = tabId; }
+    persistTabs();
+    renderPane(focusedSide);
+    renderTabStrip();
+  }
+  function newTab() {
+    var t = { id: nextTabId++, bookId: null, title: "Home" };
+    tabs.push(t);
+    assignTabToFocusedSide(t.id);
+  }
+  function closeTab(tabId) {
+    var idx = -1;
+    for (var i = 0; i < tabs.length; i++) if (tabs[i].id === tabId) { idx = i; break; }
+    if (idx === -1) return;
+    tabs.splice(idx, 1);
+    if (!tabs.length) tabs.push({ id: nextTabId++, bookId: null, title: "Home" });
+    function fallbackId() { return (tabs[Math.max(0, idx - 1)] || tabs[0]).id; }
+    if (leftTabId === tabId) leftTabId = fallbackId();
+    if (rightTabId === tabId) rightTabId = tabs.length > 1 ? fallbackId() : null;
+    if (rightTabId === leftTabId) rightTabId = null;
+    persistTabs();
+    applySplitUI();
+    renderPane("left");
+    renderTabStrip();
+  }
+
+  // ---------- split view ----------
+  function toggleSplit() {
+    if (rightTabId != null) { rightTabId = null; }
+    else {
+      var other = null;
+      for (var i = 0; i < tabs.length; i++) if (tabs[i].id !== leftTabId) { other = tabs[i].id; break; }
+      if (other == null) { var t = { id: nextTabId++, bookId: null, title: "Home" }; tabs.push(t); other = t.id; }
+      rightTabId = other;
+    }
+    persistTabs();
+    applySplitUI();
+    renderTabStrip();
+  }
+  function applySplitUI() {
+    var wrap = $("#main-panes"); var on = rightTabId != null;
+    if (wrap) wrap.classList.toggle("split", on);
+    var pr = $("#pane-right"); if (pr) pr.style.display = on ? "" : "none";
+    var btn = $("#btn-split"); if (btn) btn.classList.toggle("on", on);
+    if (on) renderPane("right");
+    if (!on && focusedSide === "right") setFocusedSide("left");
+  }
+
+  // ---------- render a pane (home or a book) ----------
+  function renderHomeInto(side) {
+    var tabId = side === "right" ? rightTabId : leftTabId;
+    var tab = getTab(tabId); if (tab) { tab.bookId = null; tab.title = "Home"; }
+    var container = paneEl(side); if (!container) return;
+    container.innerHTML = "";
     var w = cE("div", "home-wrap");
     w.appendChild(cE("h2", null, "Offline Torah Library"));
     w.appendChild(cE("p", "muted", "Thousands of seforim — Tanach, Shas, Rambam, Shulchan Aruch, Mishnah Berurah, midrash, mussar, chassidus and more — with English translations on the core texts. Everything works with no internet."));
@@ -114,7 +209,7 @@ window.CR = window.CR || {};
         var row = cE("div", "chip-row");
         ids.forEach(function (id) {
           var chip = cE("div", "chip", titleOf(id));
-          chip.addEventListener("click", function () { openBook(id); });
+          chip.addEventListener("click", function () { loadIntoTab(tabId, id); });
           row.appendChild(chip);
         });
         s.appendChild(row);
@@ -123,38 +218,52 @@ window.CR = window.CR || {};
     }
     section("Saved seforim", pins, "Open a sefer and press “Save” to keep it here for quick access.");
     section("Recently viewed", recent.slice(0, 16), "Seforim you open will appear here.");
-    pane.appendChild(w);
+    container.appendChild(w);
+    if (side === focusedSide) syncToolbarForFocused();
+    persistTabs(); renderTabStrip();
   }
 
-  // ---------- open a book ----------
-  function openBook(id) {
-    curId = id;
+  function openBook(id) { loadIntoTab(focusedTabId(), id); }
+  function loadIntoTab(tabId, bookId) {
+    var tab = getTab(tabId); if (!tab) return;
     hideHlMenu(); hideLookup();
-    var pane = $("#reader");
-    pane.innerHTML = "<div class='muted' style='padding:24px'>Loading…</div>";
-    CR.load(id, function (data) {
-      if (!data) { pane.innerHTML = "<div class='errbox'>Could not load this text from the drive.</div>"; return; }
-      settings.lastBook = id; persist();
-      curData = data;
-      document.body.classList.add("has-book");
-      recent = [id].concat(recent.filter(function (x) { return x !== id; })).slice(0, 24); store("cr-recent", recent);
+    tab.bookId = bookId; tab.__data = null;
+    persistTabs();
+    renderPane(tabId === rightTabId ? "right" : "left");
+    renderTabStrip();
+  }
+  function renderPane(side) {
+    var tabId = side === "right" ? rightTabId : leftTabId;
+    var container = paneEl(side); if (!container) return;
+    var tab = getTab(tabId);
+    if (!tab || tab.bookId == null) { renderHomeInto(side); return; }
+    container.innerHTML = "<div class='muted' style='padding:24px'>Loading…</div>";
+    var bookId = tab.bookId;
+    CR.load(bookId, function (data) {
+      if (!data) { container.innerHTML = "<div class='errbox'>Could not load this text from the drive.</div>"; return; }
+      if (tab.bookId !== bookId) return; // superseded by a newer open in this tab
+      tab.title = data.t || titleOf(bookId);
+      tab.__data = data;
+      recent = [bookId].concat(recent.filter(function (x) { return x !== bookId; })).slice(0, 24); store("cr-recent", recent);
       var art = cE("article", "book");
       art.style.fontSize = settings.fontSize + "px";
-      if (data.bi) { art.appendChild(renderBilingual(data)); }
+      if (data.bi) art.appendChild(renderBilingual(data));
       else { var c = cE("div"); setHTML(c, data.h); art.appendChild(c); }
-      pane.innerHTML = "";
-      if (data.c) pane.appendChild(cE("div", "crumb", data.c));
-      pane.appendChild(art);
+      container.innerHTML = "";
+      if (data.c) container.appendChild(cE("div", "crumb", data.c));
+      container.appendChild(art);
       if (!settings.nikud) stripNikudDOM(art);
       applyFont();
-      pane.scrollTop = 0;
-      buildLangbar(!!(data.bi && data.en));
-      updatePinBtn();
-      var prev = $(".book-item.active"); if (prev) prev.classList.remove("active");
-      var cur = document.querySelector('.book-item[data-id="' + id + '"]'); if (cur) cur.classList.add("active");
-      $("#inbook").value = "";
-      buildToc(art, data);
-      applyHighlights(art);
+      container.scrollTop = 0;
+      document.body.classList.toggle("has-book", true);
+      var prevActive = document.querySelector(".book-item.active"); if (prevActive) prevActive.classList.remove("active");
+      if (side === focusedSide) {
+        var cur = document.querySelector('.book-item[data-id="' + bookId + '"]'); if (cur) cur.classList.add("active");
+        $("#inbook").value = "";
+        syncToolbarForFocused();
+      }
+      applyHighlightsInto(container, bookId);
+      persistTabs(); renderTabStrip();
     });
   }
 
@@ -175,7 +284,7 @@ window.CR = window.CR || {};
     return wrap;
   }
 
-  // ---------- language toggle ----------
+  // ---------- language toggle (applies to every visible bilingual pane) ----------
   var LANGS = [["he", "עברית"], ["both", "Both"], ["side", "Side by side"], ["en", "English"]];
   function buildLangbar(hasEn) {
     var lb = $("#langbar"); lb.innerHTML = "";
@@ -190,14 +299,14 @@ window.CR = window.CR || {};
   }
   function setLang(l) {
     settings.lang = l; persist();
-    var w = $(".bi-wrap"); if (w) w.className = "bi-wrap lang-" + l;
+    document.querySelectorAll(".bi-wrap").forEach(function (w) { w.className = "bi-wrap lang-" + l; });
     syncLangbar();
   }
   function syncLangbar() {
     document.querySelectorAll("#langbar button").forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-lang") === settings.lang); });
   }
 
-  // ---------- table of contents ----------
+  // ---------- table of contents (for the focused pane) ----------
   function buildToc(art, data) {
     var toc = $("#toc"); toc.innerHTML = "";
     var entries = [];
@@ -213,6 +322,17 @@ window.CR = window.CR || {};
       it.addEventListener("click", function () { e.el.scrollIntoView({ block: "start" }); toc.style.display = "none"; });
       toc.appendChild(it);
     });
+  }
+
+  // ---------- toolbar sync (reflects whichever pane is focused) ----------
+  function syncToolbarForFocused() {
+    var tab = focusedTab();
+    var container = focusedContainer();
+    var art = container ? container.querySelector("article.book") : null;
+    var data = tab ? tab.__data : null;
+    if (art && data) { buildToc(art, data); buildLangbar(!!(data.bi && data.en)); }
+    else { $("#toc-btn").style.display = "none"; $("#langbar").style.display = "none"; }
+    updatePinBtn();
   }
 
   // ---------- title search ----------
@@ -233,9 +353,10 @@ window.CR = window.CR || {};
     res.style.display = "block";
   }
 
-  // ---------- in-book find ----------
+  // ---------- in-book find (focused pane) ----------
   function inBookFind(q) {
-    var art = $(".book"); if (!art) return;
+    var container = focusedContainer();
+    var art = container ? container.querySelector("article.book") : null; if (!art) return;
     art.querySelectorAll("mark.f").forEach(function (m) { var p = m.parentNode; p.replaceChild(document.createTextNode(m.textContent), m); p.normalize(); });
     q = (q || "").trim(); if (q.length < 2) return;
     var first = null, nodes = [], walk = document.createTreeWalker(art, NodeFilter.SHOW_TEXT, null), n;
@@ -267,8 +388,12 @@ window.CR = window.CR || {};
     while ((n = w.nextNode())) nodes.push(n);
     nodes.forEach(function (nd) { var s = stripNikud(nd.nodeValue); if (s !== nd.nodeValue) nd.nodeValue = s; });
   }
+  function reloadFocusedForNikud() {
+    var tab = focusedTab(); if (!tab || tab.bookId == null) return;
+    renderPane(focusedSide);
+  }
 
-  // ---------- highlights + notes (offset-based, nikud-independent, colored) ----------
+  // ---------- highlights + notes (offset-based, nikud-independent, colored, per book) ----------
   function hlKey(id) { return "cr-hl-" + id; }
   function textOffset(root, container, offset) {
     var r = document.createRange();
@@ -285,7 +410,7 @@ window.CR = window.CR || {};
     if (start > end) { var t = start; start = end; end = t; }
     return end > start ? { start: start, end: end } : null;
   }
-  function wrapRange(root, start, end, idx, hl) {
+  function wrapRange(root, start, end, idx, hl, bookId) {
     var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), pos = 0, n, jobs = [];
     while ((n = w.nextNode())) {
       var raw = n.nodeValue, len = stripNikud(raw).length, ns = pos, ne = pos + len;
@@ -300,29 +425,33 @@ window.CR = window.CR || {};
       var mk = document.createElement("mark"); mk.className = "hl" + (hl.note ? " has-note" : ""); mk.setAttribute("data-hl", idx);
       mk.style.background = hl.color || HL_COLORS[0];
       mid.parentNode.replaceChild(mk, mid); mk.appendChild(mid);
-      mk.addEventListener("click", function (ev) { ev.stopPropagation(); openHlMenu(idx, mk); });
+      mk.addEventListener("click", function (ev) { ev.stopPropagation(); openHlMenu(idx, mk, bookId); });
     });
   }
-  function applyHighlights(art) {
-    var hls = load(hlKey(curId), []);
-    hls.forEach(function (h, i) { if (h) wrapRange(art, h.start, h.end, i, h); });
+  function applyHighlightsInto(container, bookId) {
+    var art = container.querySelector("article.book"); if (!art) return;
+    var hls = load(hlKey(bookId), []);
+    hls.forEach(function (h, i) { if (h) wrapRange(art, h.start, h.end, i, h, bookId); });
   }
   function addHighlight() {
-    var root = $("article.book"); if (!root) return;
+    var tab = focusedTab(); if (!tab || tab.bookId == null) return;
+    var container = focusedContainer();
+    var root = container ? container.querySelector("article.book") : null; if (!root) return;
     var r = selectionRange(root); if (!r) { flash("Select some text in the sefer first, then press Highlight."); return; }
-    var hls = load(hlKey(curId), []);
+    var bookId = tab.bookId;
+    var hls = load(hlKey(bookId), []);
     hls.push({ start: r.start, end: r.end, note: "", color: settings.hlColor });
-    store(hlKey(curId), hls);
+    store(hlKey(bookId), hls);
     var idx = hls.length - 1;
-    wrapRange(root, r.start, r.end, idx, hls[idx]);
+    wrapRange(root, r.start, r.end, idx, hls[idx], bookId);
     window.getSelection().removeAllRanges();
     hideLookup();
-    var mk = document.querySelector('mark.hl[data-hl="' + idx + '"]');
-    if (mk) openHlMenu(idx, mk);
+    var mk = root.querySelector('mark.hl[data-hl="' + idx + '"]');
+    if (mk) openHlMenu(idx, mk, bookId);
   }
 
   // ---------- highlight menu (color swatches + note + remove) ----------
-  var hlIdx = -1;
+  var hlIdx = -1, hlBookId = null, hlContainer = null;
   function buildHlSwatches() {
     var box = $("#hl-swatches"); box.innerHTML = "";
     HL_COLORS.forEach(function (c) {
@@ -331,9 +460,9 @@ window.CR = window.CR || {};
       box.appendChild(sw);
     });
   }
-  function openHlMenu(idx, mk) {
-    hlIdx = idx;
-    var hls = load(hlKey(curId), []); var h = hls[idx]; if (!h) return;
+  function openHlMenu(idx, mk, bookId) {
+    hlIdx = idx; hlBookId = bookId; hlContainer = mk.closest("#reader, #reader2") || mk.closest(".pane");
+    var hls = load(hlKey(bookId), []); var h = hls[idx]; if (!h) return;
     $("#hl-note").value = h.note || "";
     document.querySelectorAll("#hl-swatches .sw").forEach(function (s) { s.classList.toggle("sel", s.getAttribute("data-c") === (h.color || HL_COLORS[0])); });
     var menu = $("#hl-menu");
@@ -345,28 +474,31 @@ window.CR = window.CR || {};
     menu.style.left = Math.max(6, Math.min(left, main.width - 244)) + "px";
     $("#hl-note").focus();
   }
-  function hideHlMenu() { var m = $("#hl-menu"); if (m) m.style.display = "none"; hlIdx = -1; }
+  function hideHlMenu() { var m = $("#hl-menu"); if (m) m.style.display = "none"; hlIdx = -1; hlBookId = null; hlContainer = null; }
   function setHlColor(c) {
     settings.hlColor = c; persist();
     document.querySelectorAll("#hl-swatches .sw").forEach(function (s) { s.classList.toggle("sel", s.getAttribute("data-c") === c); });
-    if (hlIdx < 0) return;
-    var hls = load(hlKey(curId), []); if (!hls[hlIdx]) return;
-    hls[hlIdx].color = c; store(hlKey(curId), hls);
-    document.querySelectorAll('mark.hl[data-hl="' + hlIdx + '"]').forEach(function (m) { m.style.background = c; });
+    if (hlIdx < 0 || !hlBookId || !hlContainer) return;
+    var hls = load(hlKey(hlBookId), []); if (!hls[hlIdx]) return;
+    hls[hlIdx].color = c; store(hlKey(hlBookId), hls);
+    hlContainer.querySelectorAll('mark.hl[data-hl="' + hlIdx + '"]').forEach(function (m) { m.style.background = c; });
   }
   function saveHlNote() {
-    if (hlIdx < 0) { hideHlMenu(); return; }
-    var hls = load(hlKey(curId), []); if (!hls[hlIdx]) { hideHlMenu(); return; }
-    hls[hlIdx].note = $("#hl-note").value; store(hlKey(curId), hls);
-    document.querySelectorAll('mark.hl[data-hl="' + hlIdx + '"]').forEach(function (m) { m.classList.toggle("has-note", !!hls[hlIdx].note); });
+    if (hlIdx < 0 || !hlBookId || !hlContainer) { hideHlMenu(); return; }
+    var hls = load(hlKey(hlBookId), []); if (!hls[hlIdx]) { hideHlMenu(); return; }
+    hls[hlIdx].note = $("#hl-note").value; store(hlKey(hlBookId), hls);
+    hlContainer.querySelectorAll('mark.hl[data-hl="' + hlIdx + '"]').forEach(function (m) { m.classList.toggle("has-note", !!hls[hlIdx].note); });
     hideHlMenu();
   }
   function removeHl() {
-    if (hlIdx < 0) { hideHlMenu(); return; }
-    var hls = load(hlKey(curId), []); if (!hls[hlIdx]) { hideHlMenu(); return; }
-    hls[hlIdx] = null; store(hlKey(curId), hls);
+    if (hlIdx < 0 || !hlBookId) { hideHlMenu(); return; }
+    var hls = load(hlKey(hlBookId), []); if (!hls[hlIdx]) { hideHlMenu(); return; }
+    var bookId = hlBookId;
+    hls[hlIdx] = null; store(hlKey(bookId), hls);
     hideHlMenu();
-    if (curId != null) openBook(curId);
+    var lt = getTab(leftTabId), rt = getTab(rightTabId);
+    if (lt && lt.bookId === bookId) renderPane("left");
+    if (rt && rt.bookId === bookId) renderPane("right");
   }
 
   // ---------- select-to-look-up (dictionary) ----------
@@ -389,17 +521,22 @@ window.CR = window.CR || {};
   }
   function hideLookup() { var f = $("#lookup-fab"); if (f) f.style.display = "none"; }
 
-  // ---------- saved seforim (formerly "pins") ----------
+  // ---------- saved seforim ("Save" — formerly "pin") ----------
   function updatePinBtn() {
-    var p = pins.indexOf(curId) !== -1;
+    var tab = focusedTab(); var id = tab ? tab.bookId : null;
+    var btn = $("#btn-pin");
+    if (id == null) { btn.style.display = "none"; return; }
+    btn.style.display = "inline-flex";
+    var p = pins.indexOf(id) !== -1;
     $("#pin-label").textContent = p ? "Saved" : "Save";
-    $("#btn-pin").classList.toggle("on", p);
-    $("#btn-pin").title = p ? "Remove this sefer from your Home page" : "Save this sefer to your Home page";
+    btn.classList.toggle("on", p);
+    btn.title = p ? "Remove this sefer from your Home page" : "Save this sefer to your Home page";
   }
   function togglePin() {
-    if (curId == null) return;
-    var i = pins.indexOf(curId);
-    if (i === -1) pins.unshift(curId); else pins.splice(i, 1);
+    var tab = focusedTab(); if (!tab || tab.bookId == null) return;
+    var id = tab.bookId;
+    var i = pins.indexOf(id);
+    if (i === -1) pins.unshift(id); else pins.splice(i, 1);
     pins = pins.slice(0, 40); store("cr-pins", pins); updatePinBtn();
   }
 
@@ -413,9 +550,11 @@ window.CR = window.CR || {};
   function applyTheme() { document.body.setAttribute("data-theme", settings.theme); }
   function applyFont() { var f = FONTS[settings.font] || FONTS.frankruehl; document.querySelectorAll("article.book, .bi-wrap").forEach(function (el) { el.style.fontFamily = f; }); }
   function applyReadColors() {
-    var rd = $("#reader"); if (!rd) return;
-    if (settings.textColor) rd.style.setProperty("--readink", settings.textColor); else rd.style.removeProperty("--readink");
-    if (settings.bgColor) rd.style.setProperty("--readbg", settings.bgColor); else rd.style.removeProperty("--readbg");
+    ["#reader", "#reader2"].forEach(function (sel) {
+      var rd = $(sel); if (!rd) return;
+      if (settings.textColor) rd.style.setProperty("--readink", settings.textColor); else rd.style.removeProperty("--readink");
+      if (settings.bgColor) rd.style.setProperty("--readbg", settings.bgColor); else rd.style.removeProperty("--readbg");
+    });
   }
   function setTheme(t) { settings.theme = t; settings.textColor = null; settings.bgColor = null; persist(); applyTheme(); applyReadColors(); syncSettingsUI(); }
   function toggleFull() { if (!document.fullscreenElement) { (document.documentElement.requestFullscreen || function () {}).call(document.documentElement); } else { document.exitFullscreen && document.exitFullscreen(); } }
@@ -497,7 +636,7 @@ window.CR = window.CR || {};
     $("#nikud").checked = settings.nikud;
     syncSettingsUI();
 
-    // title search (persistent, collapsible)
+    // title search (persistent, collapsible — independent of the sidebar)
     $("#search").addEventListener("input", function () { runSearch(this.value); });
     var sw = $("#search-wrap"), searchInp = $("#search");
     function setSearchOpen(open) {
@@ -526,10 +665,10 @@ window.CR = window.CR || {};
     $("#sp-font").addEventListener("change", function () { settings.font = this.value; persist(); applyFont(); });
     $("#fontsize").addEventListener("input", function () {
       settings.fontSize = +this.value; persist();
-      var a = $(".book"); if (a) a.style.fontSize = settings.fontSize + "px";
+      document.querySelectorAll("article.book").forEach(function (a) { a.style.fontSize = settings.fontSize + "px"; });
       var fs = $("#sp-fontsize-val"); if (fs) fs.textContent = settings.fontSize + "px";
     });
-    $("#nikud").addEventListener("change", function () { settings.nikud = this.checked; persist(); if (curId != null) openBook(curId); });
+    $("#nikud").addEventListener("change", function () { settings.nikud = this.checked; persist(); reloadFocusedForNikud(); });
     $("#sp-textcolor").addEventListener("input", function () { settings.textColor = this.value; persist(); applyReadColors(); });
     $("#sp-bgcolor").addEventListener("input", function () { settings.bgColor = this.value; persist(); applyReadColors(); });
     $("#sp-textreset").addEventListener("click", function () { settings.textColor = null; persist(); applyReadColors(); syncSettingsUI(); });
@@ -541,9 +680,9 @@ window.CR = window.CR || {};
     $("#btn-import").addEventListener("click", function () { impFile.click(); });
     impFile.addEventListener("change", function () { if (this.files[0]) importData(this.files[0]); });
 
-    // reader actions
+    // reader actions (apply to the focused pane)
     $("#btn-full").addEventListener("click", toggleFull);
-    $("#btn-home").addEventListener("click", renderHome);
+    $("#btn-home").addEventListener("click", function () { loadIntoTab(focusedTabId(), null); });
     $("#btn-highlight").addEventListener("click", function (e) { e.stopPropagation(); addHighlight(); });
     $("#btn-pin").addEventListener("click", togglePin);
     $("#btn-print").addEventListener("click", function () { window.print(); });
@@ -561,11 +700,19 @@ window.CR = window.CR || {};
       if (word && window.CRDict) CRDict.lookup(word);
     });
 
-    // selection -> look-up affordance
-    var reader = $("#reader");
-    reader.addEventListener("mouseup", showLookup);
-    reader.addEventListener("mousedown", function (e) { if (!e.target.closest("#lookup-fab")) hideLookup(); });
-    reader.addEventListener("scroll", function () { hideLookup(); hideHlMenu(); });
+    // research tabs + split view
+    $("#btn-split").addEventListener("click", toggleSplit);
+    var paneLeft = $("#pane-left"), paneRight = $("#pane-right");
+    paneLeft.addEventListener("mousedown", function () { setFocusedSide("left"); });
+    paneRight.addEventListener("mousedown", function () { setFocusedSide("right"); });
+
+    // selection -> look-up affordance (both panes)
+    ["#reader", "#reader2"].forEach(function (sel) {
+      var pane = $(sel); if (!pane) return;
+      pane.addEventListener("mouseup", showLookup);
+      pane.addEventListener("mousedown", function (e) { if (!e.target.closest("#lookup-fab")) hideLookup(); });
+      pane.addEventListener("scroll", function () { hideLookup(); hideHlMenu(); });
+    });
 
     // global click: close popovers
     document.addEventListener("click", function (e) {
@@ -576,6 +723,8 @@ window.CR = window.CR || {};
     });
 
     if (CR.tree.length) CR.ready();
-    if (settings.lastBook && CR._exists(settings.lastBook)) openBook(settings.lastBook); else renderHome();
+    applySplitUI();
+    renderPane("left");
+    renderTabStrip();
   });
 })();
