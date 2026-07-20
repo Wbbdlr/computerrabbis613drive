@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Offline Library — Computer Rabbis</title>
+<link rel="icon" type="image/png" href="../brand/computer-rabbis-icon.png">
 <style>
   @font-face { font-family:"FrankRuehl"; src:url("fonts/FrankRuehlCLM-Medium.ttf"); font-display:swap; }
   @font-face { font-family:"NotoHe"; src:url("fonts/NotoSerifHebrew-VariableFont_wdth,wght.ttf"); font-display:swap; }
@@ -120,6 +121,8 @@
   @media (max-width:640px){ .lang-side .seg-body { flex-direction:column; } .lang-side .en-seg { border:none; padding:0; margin-top:4px; } }
   /* highlights */
   mark.f { background:var(--coral); color:var(--navy); }
+  .fts-hit { animation:fts-pulse 2.2s ease-out; border-radius:4px; }
+  @keyframes fts-pulse { 0%{ background:var(--coral); } 100%{ background:transparent; } }
   mark.hl { border-radius:2px; cursor:pointer; color:inherit; }
   mark.hl.has-note { border-bottom:2px dotted rgba(0,0,0,.45); }
   /* home view */
@@ -131,6 +134,16 @@
   .chip-row { display:flex; flex-wrap:wrap; gap:8px; }
   .chip { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:6px 14px; cursor:pointer; direction:rtl; font-family:"FrankRuehl",serif; }
   .chip:hover { border-color:var(--coral); }
+  .chip-daf { direction:ltr; text-align:left; background:var(--card); border-color:var(--coral); color:var(--ink); }
+  .chip-daf .he-val { direction:rtl; unicode-bidi:embed; font-family:"FrankRuehl",serif; color:var(--ink); font-weight:bold; }
+  .home-sec-head { display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--line); padding-bottom:4px; }
+  .home-sec-head h3 { border-bottom:none; padding-bottom:0; margin:0; }
+  .learn-customize { margin-inline-start:auto; background:none; border:1px solid var(--line); border-radius:14px; padding:3px 12px; font:inherit; font-size:.78rem; color:var(--muted); cursor:pointer; }
+  .learn-customize:hover { border-color:var(--coral); color:var(--ink); }
+  .learn-popover { display:none; margin-top:8px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 14px; max-width:360px; box-shadow:0 6px 20px rgba(0,0,0,.15); }
+  .learn-popover.open { display:block; }
+  .learn-pop-hint { font-size:.78rem; color:var(--muted); margin-bottom:6px; }
+  .learn-pop-row { display:flex; align-items:center; gap:8px; padding:4px 0; font-size:.88rem; cursor:pointer; color:var(--ink); }
   .muted { color:var(--muted); }
   .errbox { background:#7a1f1f; color:#fff; padding:14px 16px; border-radius:8px; margin:20px; }
   /* ---------- highlight menu (click a highlight or a fresh selection) ---------- */
@@ -180,6 +193,30 @@
   .dp-entry .def { line-height:1.8; font-size:1rem; }
   .dp-entry .def a { color:#2f4f8f; text-decoration:none; cursor:pointer; }
   body[data-theme="dark"] .dp-entry .def a, body[data-theme="night"] .dp-entry .def a { color:#8ab4f8; }
+  /* ---------- full-text search panel ---------- */
+  #fts-panel { width:0; background:var(--sidebar); border-inline-start:1px solid var(--line); display:flex; flex-direction:column; transition:width .16s; overflow:hidden; }
+  body.fts-open #fts-panel { width:min(420px,85vw); }
+  #fts-panel .dp-body { flex:1; overflow:auto; padding:6px 0; }
+  .fts-msg { padding:12px; }
+  .fts-summary { padding:4px 12px 8px; font-size:.8rem; direction:ltr; }
+  .fts-book { border-bottom:1px solid var(--line); padding:8px 12px; }
+  .fts-book-head { display:flex; justify-content:space-between; align-items:baseline; direction:rtl; font-family:"FrankRuehl",serif; font-size:1.05rem; color:var(--navy); cursor:default; }
+  body[data-theme="dark"] .fts-book-head, body[data-theme="night"] .fts-book-head { color:var(--coral); }
+  .fts-book-count { font-family:Georgia,serif; font-size:.72rem; color:var(--muted); background:var(--card); border-radius:10px; padding:1px 8px; }
+  .fts-hits { margin-top:4px; }
+  .fts-hit { direction:rtl; font-family:"FrankRuehl",serif; font-size:.92rem; line-height:1.6; padding:4px 6px; cursor:pointer; border-radius:5px; }
+  .fts-hit:hover { background:rgba(0,0,0,.05); }
+  .fts-more { font-size:.75rem; color:var(--navy2); cursor:pointer; padding:3px 6px; display:none; }
+  .fts-more:hover { text-decoration:underline; }
+  @media (max-width:760px){ body.fts-open #fts-panel { position:absolute; right:0; height:100%; z-index:30; box-shadow:-4px 0 16px rgba(0,0,0,.2);} }
+  /* ---------- dark/night contrast: --navy2 text is unreadable against dark theme backgrounds ---------- */
+  body[data-theme="dark"] .tibtn, body[data-theme="dark"] .fbtn, body[data-theme="dark"] #langbar button,
+  body[data-theme="dark"] article.book h2, body[data-theme="dark"] article.book h3, body[data-theme="dark"] .sec-label,
+  body[data-theme="dark"] .home-sec h3, body[data-theme="dark"] .linkbtn, body[data-theme="dark"] .fts-more,
+  body[data-theme="night"] .tibtn, body[data-theme="night"] .fbtn, body[data-theme="night"] #langbar button,
+  body[data-theme="night"] article.book h2, body[data-theme="night"] article.book h3, body[data-theme="night"] .sec-label,
+  body[data-theme="night"] .home-sec h3, body[data-theme="night"] .linkbtn, body[data-theme="night"] .fts-more
+  { color:var(--coral); }
   /* ---------- sidebar collapse arrow ---------- */
   #sidebar-arrow { position:absolute; left:340px; top:50%; transform:translateY(-50%); z-index:25; width:22px; height:56px; border:1px solid var(--line); border-radius:0 7px 7px 0; background:var(--sidebar); color:var(--muted); cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center; transition:left .15s; }
   #sidebar-arrow:hover { background:var(--coral); color:var(--navy); }
@@ -188,7 +225,7 @@
   body.nosidebar #sidebar-arrow .chev { transform:scaleX(-1); }
   @media (max-width:760px){ .sidebar { width:78vw; position:absolute; z-index:30; height:100%; box-shadow:4px 0 16px rgba(0,0,0,.2);} #sidebar-arrow { display:none; } body.dict-open #dict-panel { position:absolute; right:0; height:100%; z-index:30; box-shadow:-4px 0 16px rgba(0,0,0,.2);} }
   @media print {
-    header, .tabstrip, .toolbar, .sidebar, #sidebar-arrow, #dict-panel { display:none !important; }
+    header, .tabstrip, .toolbar, .sidebar, #sidebar-arrow, #dict-panel, #fts-panel { display:none !important; }
     .pane + .pane { display:none !important; } /* print only the focused pane */
     #reader, #reader2 { overflow:visible; padding:0; }
     body, #reader, #reader2 { background:#fff; color:#000; }
@@ -207,6 +244,12 @@
     <a class="iconbtn" href="../START-HERE.html" title="Back to the drive home page" aria-label="Drive home">
       <svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
     </a>
+    <a class="iconbtn" href="../Zmanim/index.html" title="Zmanim &amp; Luach" aria-label="Zmanim and Luach">
+      <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+    </a>
+    <button class="iconbtn" id="btn-fts" title="Search inside the text — every sefer" aria-label="Search inside the text">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><circle cx="10.5" cy="15.5" r="2.5"/><path d="M12.3 17.3L14 19"/></svg>
+    </button>
     <button class="iconbtn" id="btn-dict" title="Dictionary — Jastrow, BDB, Klein" aria-label="Dictionary">
       <svg class="ic" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19a2 2 0 0 1 2-2h13"/></svg>
     </button>
@@ -216,7 +259,7 @@
     <button class="iconbtn" id="btn-split" title="Split view — compare two tabs side by side" aria-label="Split view">
       <svg class="ic" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/></svg>
     </button>
-    <button class="iconbtn" id="btn-full" title="Fullscreen" aria-label="Fullscreen">
+    <button class="iconbtn" id="btn-full" title="Fullscreen (F)" aria-label="Fullscreen">
       <svg class="ic" viewBox="0 0 24 24"><path d="M4 9V4h5"/><path d="M20 9V4h-5"/><path d="M4 15v5h5"/><path d="M20 15v5h-5"/></svg>
     </button>
   </div>
@@ -234,7 +277,7 @@
     <svg class="ic" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg> Home
   </button>
   <div class="search-wrap" id="search-wrap">
-    <button class="tibtn" id="btn-search" title="Search seforim by title" aria-label="Search titles">
+    <button class="tibtn" id="btn-search" title="Search seforim by title (/)" aria-label="Search titles">
       <svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
     </button>
     <input type="text" id="search" placeholder="חיפוש לפי שם ספר…  (search by title)">
@@ -253,6 +296,9 @@
   </button>
   <button class="fbtn findonly" id="btn-pin" title="Save this sefer to your Home page">
     <svg class="ic" viewBox="0 0 24 24"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 17l-5.2 2.9 1-5.8L3.5 9.2l5.9-.9z"/></svg> <span id="pin-label">Save</span>
+  </button>
+  <button class="fbtn findonly" id="btn-copyloc" title="Copy this location as text (to paste to a chavrusa)">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3"/></svg> Copy citation
   </button>
   <button class="fbtn findonly" id="btn-print" title="Print this sefer">
     <svg class="ic" viewBox="0 0 24 24"><path d="M6 9V3h12v6"/><path d="M6 18H4v-6h16v6h-2"/><path d="M8 15h8v6H8z"/></svg>
@@ -309,6 +355,20 @@
       <div class="dp-res" id="dp-res"></div>
       <div class="dp-entry" id="dp-entry"><div class="muted" style="direction:ltr">Select a word in a sefer, or type above, to look it up in Jastrow, BDB &amp; Klein.</div></div>
     </div>
+  </aside>
+
+  <!-- Full-text search panel -->
+  <aside id="fts-panel">
+    <div class="dp-head">
+      <svg class="ic" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><circle cx="10.5" cy="15.5" r="2.5"/><path d="M12.3 17.3L14 19"/></svg>
+      <span class="t">Search inside the text</span>
+      <span style="flex:1"></span>
+      <button class="iconbtn" id="fts-close" title="Close search" style="padding:4px">
+        <svg class="ic" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="dp-search"><input type="text" id="fts-in" placeholder="חפש בתוך הטקסט…  (search every sefer)" dir="rtl" autocomplete="off"></div>
+    <div class="dp-body" id="fts-results"><div class="muted fts-msg" style="direction:ltr">Type a word or a few words. Every result must contain all of them in the same paragraph.</div></div>
   </aside>
 </div>
 
@@ -376,8 +436,11 @@
   </div>
 </div>
 
+<script src="../Zmanim/kosher-zmanim.min.js"></script>
+<script src="../Zmanim/hebcal.bundle.min.js"></script>
 <script src="reader.js"></script>
 <script src="dict-embed.js"></script>
+<script src="search-embed.js"></script>
 <script src="tree.js"></script>
 <script src="tree-bilingual.js"></script>
 </body>

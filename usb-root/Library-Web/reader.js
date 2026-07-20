@@ -53,6 +53,370 @@ window.CR = window.CR || {};
     return CR._titleMap[id] || ("#" + id);
   }
 
+  // ---------- citation references (perek/daf jump-to) ----------
+  var GEMATRIA = { "א":1,"ב":2,"ג":3,"ד":4,"ה":5,"ו":6,"ז":7,"ח":8,"ט":9,"י":10,"כ":20,"ך":20,"ל":30,"מ":40,"ם":40,
+    "נ":50,"ן":50,"ס":60,"ע":70,"פ":80,"ף":80,"צ":90,"ץ":90,"ק":100,"ר":200,"ש":300,"ת":400 };
+  function hebToInt(s) {
+    var sum = 0, any = false;
+    for (var i = 0; i < s.length; i++) { var v = GEMATRIA[s[i]]; if (v) { sum += v; any = true; } }
+    return any ? sum : null;
+  }
+  function intToHeb(n) {
+    if (!n || n < 1) return String(n);
+    var ones = ["", "א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט"];
+    var tens = ["", "י", "כ", "ל", "מ", "נ", "ס", "ע", "פ", "צ"];
+    var hundreds = ["", "ק", "ר", "ש", "ת"];
+    var h = Math.floor(n / 100), rem = n % 100;
+    var out = "";
+    while (h > 4) { out += "ת"; h -= 4; }
+    out += hundreds[h];
+    if (rem === 15) out += "טו";
+    else if (rem === 16) out += "טז";
+    else out += tens[Math.floor(rem / 10)] + ones[rem % 10];
+    return out.length > 1 ? out.slice(0, -1) + "״" + out.slice(-1) : out + "׳";
+  }
+  // Parses a trailing chapter/daf reference off a search query, e.g. "ברכות ב" or "בראשית פרק ג".
+  // Returns {title, num, amud} or null if the query has no trailing numeral token.
+  function parseQueryRef(q) {
+    var m = q.match(/^(.*\S)\s+(\d+|[א-ת][א-ת''"״׳]{0,4})([.:]?)\s*$/);
+    if (!m) return null;
+    var num = /^\d+$/.test(m[2]) ? parseInt(m[2], 10) : hebToInt(m[2].replace(/[''"״׳]/g, ""));
+    if (!num) return null;
+    return { title: m[1], num: num, amud: m[3] || "" };
+  }
+  // Parses a rendered heading's own text (e.g. "פרק יב" or "דף עח.") back into {num, amud}.
+  function parseHeadingRef(text) {
+    var m = (text || "").trim().match(/([א-ת][א-ת''"״׳]*)\s*([.:]?)\s*$/);
+    if (!m) return null;
+    var num = hebToInt(m[1].replace(/[''"״׳]/g, ""));
+    if (!num) return null;
+    return { num: num, amud: m[2] || "" };
+  }
+  // Scans the rendered book for a perek/daf heading matching ref, scrolls it into view.
+  function jumpToRef(container, ref) {
+    if (!ref) return false;
+    var art = container.querySelector("article.book"); if (!art) return false;
+    var heads = art.querySelectorAll("h2, h3"), fallback = null;
+    for (var i = 0; i < heads.length; i++) {
+      var hr = parseHeadingRef(heads[i].textContent);
+      if (!hr || hr.num !== ref.num) continue;
+      if (!fallback) fallback = heads[i];
+      if (!ref.amud || hr.amud === ref.amud) { heads[i].scrollIntoView({ block: "start" }); flash("→ " + heads[i].textContent.trim()); return true; }
+    }
+    if (fallback) { fallback.scrollIntoView({ block: "start" }); flash("→ " + fallback.textContent.trim()); return true; }
+    return false;
+  }
+  // Today's Daf Yomi (Bavli), resolved to a book id in this library, if KosherZmanim is loaded.
+  function todaysDafYomi() {
+    try {
+      if (!window.KosherZmanim) return null;
+      var KZ = window.KosherZmanim;
+      var daf = KZ.YomiCalculator.getDafYomiBavli(new KZ.JewishCalendar(new Date()));
+      var masechta = daf.getMasechta(), dafNum = daf.getDaf();
+      var id = null;
+      for (var i = 0; i < CR.titles.length; i++) {
+        if (CR.titles[i][1] === masechta && CR.titles[i][2] && CR.titles[i][2].indexOf("תלמוד בבלי") !== -1) { id = CR.titles[i][0]; break; }
+      }
+      if (id == null) return null;
+      return { id: id, label: masechta + " " + intToHeb(dafNum), ref: { num: dafNum, amud: "." } };
+    } catch (e) { return null; }
+  }
+
+  function findTitleByExactHebrew(hebrewTitle, categorySubstr) {
+    for (var i = 0; i < CR.titles.length; i++) {
+      if (CR.titles[i][1] === hebrewTitle && CR.titles[i][2] && CR.titles[i][2].indexOf(categorySubstr) !== -1) return CR.titles[i][0];
+    }
+    return null;
+  }
+  function firstIntFromPerek(perek) {
+    var m = String(perek).match(/\d+/);
+    return m ? parseInt(m[0], 10) : null;
+  }
+
+  // English section name (as used by @hebcal/learning's Rambam-3 cycle) -> this
+  // library's "משנה תורה, <hilchos name>" title. Cross-checked entry-by-entry
+  // against the 88 sections of the Mishneh Torah and against hebcal.com's own
+  // Hebrew rendering of the same cycle.
+  var RAMBAM_HE = {
+    "Transmission of the Oral Law": "משנה תורה, מסירת תורה שבעל פה",
+    "Positive Mitzvot": "משנה תורה, מצוות עשה",
+    "Negative Mitzvot": "משנה תורה, מצוות לא תעשה",
+    "Overview of Mishneh Torah Contents": "משנה תורה, תוכן החיבור",
+    "Foundations of the Torah": "משנה תורה, הלכות יסודי התורה",
+    "Human Dispositions": "משנה תורה, הלכות דעות",
+    "Torah Study": "משנה תורה, הלכות תלמוד תורה",
+    "Foreign Worship and Customs of the Nations": "משנה תורה, הלכות עבודה זרה וחוקות הגויים",
+    "Repentance": "משנה תורה, הלכות תשובה",
+    "Reading the Shema": "משנה תורה, הלכות קריאת שמע",
+    "Prayer and the Priestly Blessing": "משנה תורה, הלכות תפילה וברכת כהנים",
+    "Tefillin, Mezuzah and the Torah Scroll": "משנה תורה, הלכות תפילין ומזוזה וספר תורה",
+    "Fringes": "משנה תורה, הלכות ציצית",
+    "Blessings": "משנה תורה, הלכות ברכות",
+    "Circumcision": "משנה תורה, הלכות מילה",
+    "The Order of Prayer": "משנה תורה, סדר התפילה",
+    "Sabbath": "משנה תורה, הלכות שבת",
+    "Eruvin": "משנה תורה, הלכות עירובין",
+    "Rest on the Tenth of Tishrei": "משנה תורה, הלכות שביתת עשור",
+    "Rest on a Holiday": "משנה תורה, הלכות שביתת יום טוב",
+    "Leavened and Unleavened Bread": "משנה תורה, הלכות חמץ ומצה",
+    "Shofar, Sukkah and Lulav": "משנה תורה, הלכות שופר וסוכה ולולב",
+    "Sheqel Dues": "משנה תורה, הלכות שקלים",
+    "Sanctification of the New Month": "משנה תורה, הלכות קידוש החודש",
+    "Fasts": "משנה תורה, הלכות תעניות",
+    "Scroll of Esther and Hanukkah": "משנה תורה, הלכות מגילה וחנוכה",
+    "Marriage": "משנה תורה, הלכות אישות",
+    "Divorce": "משנה תורה, הלכות גירושין",
+    "Levirate Marriage and Release": "משנה תורה, הלכות יבום וחליצה",
+    "Virgin Maiden": "משנה תורה, הלכות נערה בתולה",
+    "Woman Suspected of Infidelity": "משנה תורה, הלכות סוטה",
+    "Forbidden Intercourse": "משנה תורה, הלכות איסורי ביאה",
+    "Forbidden Foods": "משנה תורה, הלכות מאכלות אסורות",
+    "Ritual Slaughter": "משנה תורה, הלכות שחיטה",
+    "Oaths": "משנה תורה, הלכות שבועות",
+    "Vows": "משנה תורה, הלכות נדרים",
+    "Nazariteship": "משנה תורה, הלכות נזירות",
+    "Appraisals and Devoted Property": "משנה תורה, הלכות ערכים וחרמין",
+    "Diverse Species": "משנה תורה, הלכות כלאים",
+    "Gifts to the Poor": "משנה תורה, הלכות מתנות עניים",
+    "Heave Offerings": "משנה תורה, הלכות תרומות",
+    "Tithes": "משנה תורה, הלכות מעשרות",
+    "Second Tithes and Fourth Year's Fruit": "משנה תורה, הלכות מעשר שני ונטע רבעי",
+    "First Fruits and other Gifts to Priests Outside the Sanctuary": "משנה תורה, הלכות ביכורים ושאר מתנות כהונה שבגבולין",
+    "Sabbatical Year and the Jubilee": "משנה תורה, הלכות שמיטה ויובל",
+    "The Chosen Temple": "משנה תורה, הלכות בית הבחירה",
+    "Vessels of the Sanctuary and Those who Serve Therein": "משנה תורה, הלכות כלי המקדש והעובדין בו",
+    "Admission into the Sanctuary": "משנה תורה, הלכות ביאת מקדש",
+    "Things Forbidden on the Altar": "משנה תורה, הלכות איסורי המזבח",
+    "Sacrificial Procedure": "משנה תורה, הלכות מעשה הקרבנות",
+    "Daily Offerings and Additional Offerings": "משנה תורה, הלכות תמידים ומוספין",
+    "Sacrifices Rendered Unfit": "משנה תורה, הלכות פסולי המוקדשין",
+    "Service on the Day of Atonement": "משנה תורה, הלכות עבודת יום הכפורים",
+    "Trespass": "משנה תורה, הלכות מעילה",
+    "Paschal Offering": "משנה תורה, הלכות קרבן פסח",
+    "Festival Offering": "משנה תורה, הלכות חגיגה",
+    "Firstlings": "משנה תורה, הלכות בכורות",
+    "Offerings for Unintentional Transgressions": "משנה תורה, הלכות שגגות",
+    "Offerings for Those with Incomplete Atonement": "משנה תורה, הלכות מחוסרי כפרה",
+    "Substitution": "משנה תורה, הלכות תמורה",
+    "Defilement by a Corpse": "משנה תורה, הלכות טומאת מת",
+    "Red Heifer": "משנה תורה, הלכות פרה אדומה",
+    "Defilement by Leprosy": "משנה תורה, הלכות טומאת צרעת",
+    "Those Who Defile Bed or Seat": "משנה תורה, הלכות מטמאי משכב ומושב",
+    "Other Sources of Defilement": "משנה תורה, הלכות שאר אבות הטומאות",
+    "Defilement of Foods": "משנה תורה, הלכות טומאת אוכלים",
+    "Vessels": "משנה תורה, הלכות כלים",
+    "Immersion Pools": "משנה תורה, הלכות מקואות",
+    "Damages to Property": "משנה תורה, הלכות נזקי ממון",
+    "Theft": "משנה תורה, הלכות גניבה",
+    "Robbery and Lost Property": "משנה תורה, הלכות גזילה ואבידה",
+    "One Who Injures a Person or Property": "משנה תורה, הלכות חובל ומזיק",
+    "Murderer and the Preservation of Life": "משנה תורה, הלכות רוצח ושמירת נפש",
+    "Sales": "משנה תורה, הלכות מכירה",
+    "Ownerless Property and Gifts": "משנה תורה, הלכות זכייה ומתנה",
+    "Neighbors": "משנה תורה, הלכות שכנים",
+    "Agents and Partners": "משנה תורה, הלכות שלוחין ושותפין",
+    "Slaves": "משנה תורה, הלכות עבדים",
+    "Hiring": "משנה תורה, הלכות שכירות",
+    "Borrowing and Deposit": "משנה תורה, הלכות שאלה ופיקדון",
+    "Creditor and Debtor": "משנה תורה, הלכות מלווה ולווה",
+    "Plaintiff and Defendant": "משנה תורה, הלכות טוען ונטען",
+    "Inheritances": "משנה תורה, הלכות נחלות",
+    "The Sanhedrin and the Penalties within their Jurisdiction": "משנה תורה, הלכות סנהדרין והעונשין המסורין להם",
+    "Testimony": "משנה תורה, הלכות עדות",
+    "Rebels": "משנה תורה, הלכות ממרים",
+    "Mourning": "משנה תורה, הלכות אבל",
+    "Kings and Wars": "משנה תורה, הלכות מלכים ומלחמות"
+  };
+  function todaysRambamCycle(cycleId) {
+    try {
+      if (!window.hebcal || !hebcal.DailyLearning) return null;
+      var hd = new hebcal.HDate(new Date());
+      var ev = hebcal.DailyLearning.lookup(cycleId, hd);
+      if (!ev || !ev.readings || !ev.readings.length) return null;
+      var first = ev.readings[0];
+      var heTitle = RAMBAM_HE[first.name];
+      if (!heTitle) return null;
+      var id = findTitleByExactHebrew(heTitle, "משנה תורה");
+      if (id == null) return null;
+      var num = firstIntFromPerek(first.perek);
+      var ref = num ? { num: num, amud: "" } : null;
+      var shortHe = heTitle.replace(/^משנה תורה, /, "");
+      return { id: id, label: shortHe + (num ? " " + intToHeb(num) : ""), ref: ref };
+    } catch (e) { return null; }
+  }
+
+  // Sephardic transliteration (as used by @hebcal/learning's Mishna Yomi) -> this
+  // library's "משנה <tractate>" title.
+  var MISHNA_HE = {
+    "Berakhot": "משנה ברכות", "Peah": "משנה פאה", "Demai": "משנה דמאי", "Kilayim": "משנה כלאים",
+    "Sheviit": "משנה שביעית", "Terumot": "משנה תרומות", "Maasrot": "משנה מעשרות", "Maaser Sheni": "משנה מעשר שני",
+    "Challah": "משנה חלה", "Orlah": "משנה ערלה", "Bikkurim": "משנה ביכורים",
+    "Shabbat": "משנה שבת", "Eruvin": "משנה עירובין", "Pesachim": "משנה פסחים", "Shekalim": "משנה שקלים",
+    "Yoma": "משנה יומא", "Sukkah": "משנה סוכה", "Beitzah": "משנה ביצה", "Rosh Hashanah": "משנה ראש השנה",
+    "Taanit": "משנה תענית", "Megillah": "משנה מגילה", "Moed Katan": "משנה מועד קטן", "Chagigah": "משנה חגיגה",
+    "Yevamot": "משנה יבמות", "Ketubot": "משנה כתובות", "Nedarim": "משנה נדרים", "Nazir": "משנה נזיר",
+    "Sotah": "משנה סוטה", "Gittin": "משנה גיטין", "Kiddushin": "משנה קידושין",
+    "Bava Kamma": "משנה בבא קמא", "Bava Metzia": "משנה בבא מציעא", "Bava Batra": "משנה בבא בתרא",
+    "Sanhedrin": "משנה סנהדרין", "Makkot": "משנה מכות", "Shevuot": "משנה שבועות", "Eduyot": "משנה עדיות",
+    "Avodah Zarah": "משנה עבודה זרה", "Avot": "משנה אבות", "Horayot": "משנה הוריות",
+    "Zevachim": "משנה זבחים", "Menachot": "משנה מנחות", "Chullin": "משנה חולין", "Bekhorot": "משנה בכורות",
+    "Arakhin": "משנה ערכין", "Temurah": "משנה תמורה", "Keritot": "משנה כריתות", "Meilah": "משנה מעילה",
+    "Tamid": "משנה תמיד", "Middot": "משנה מדות", "Kinnim": "משנה קינים",
+    "Kelim": "משנה כלים", "Oholot": "משנה אהלות", "Negaim": "משנה נגעים", "Parah": "משנה פרה",
+    "Taharot": "משנה טהרות", "Mikvaot": "משנה מקואות", "Niddah": "משנה נדה", "Makhshirin": "משנה מכשירין",
+    "Zavim": "משנה זבים", "Tevul Yom": "משנה טבול יום", "Yadayim": "משנה ידים", "Uktzin": "משנה עוקצים"
+  };
+  function todaysMishnaYomi() {
+    try {
+      if (!window.hebcal || !hebcal.DailyLearning) return null;
+      var hd = new hebcal.HDate(new Date());
+      var ev = hebcal.DailyLearning.lookup("mishnaYomi", hd);
+      if (!ev || !ev.mishnaYomi || !ev.mishnaYomi.length) return null;
+      var first = ev.mishnaYomi[0];
+      var heTitle = MISHNA_HE[first.k];
+      if (!heTitle) return null;
+      var id = findTitleByExactHebrew(heTitle, "משנה");
+      if (id == null) return null;
+      var num = firstIntFromPerek(first.v);
+      var ref = num ? { num: num, amud: "" } : null;
+      var shortHe = heTitle.replace(/^משנה /, "");
+      return { id: id, label: shortHe + (num ? " " + intToHeb(num) : ""), ref: ref };
+    } catch (e) { return null; }
+  }
+
+  // Today's Daf Yomi (Yerushalmi), same pattern as Bavli above but the Jerusalem Talmud cycle.
+  function todaysYerushalmiDafYomi() {
+    try {
+      if (!window.KosherZmanim) return null;
+      var KZ = window.KosherZmanim;
+      var daf = KZ.YerushalmiYomiCalculator.getDafYomiYerushalmi(new KZ.JewishCalendar(new Date()));
+      var masechta = daf.getMasechta(), dafNum = daf.getDaf();
+      var id = findTitleByExactHebrew("תלמוד ירושלמי " + masechta, "תלמוד ירושלמי");
+      if (id == null) return null;
+      return { id: id, label: masechta + " " + intToHeb(dafNum), ref: { num: dafNum, amud: "" } };
+    } catch (e) { return null; }
+  }
+
+  // English book names (as used by @hebcal/learning's Nach Yomi and "929" cycles) -> this
+  // library's Tanach titles. Verified against the actual bundle's output across full cycles.
+  var TANACH_HE = {
+    "Genesis": "בראשית", "Exodus": "שמות", "Leviticus": "ויקרא", "Numbers": "במדבר", "Deuteronomy": "דברים",
+    "Joshua": "יהושע", "Judges": "שופטים", "I Samuel": "שמואל א", "II Samuel": "שמואל ב",
+    "I Kings": "מלכים א", "II Kings": "מלכים ב", "Isaiah": "ישעיהו", "Jeremiah": "ירמיהו", "Ezekiel": "יחזקאל",
+    "Hosea": "הושע", "Joel": "יואל", "Amos": "עמוס", "Obadiah": "עובדיה", "Jonah": "יונה", "Micah": "מיכה",
+    "Nachum": "נחום", "Habakkuk": "חבקוק", "Zephaniah": "צפניה", "Haggai": "חגי", "Zechariah": "זכריה", "Malachi": "מלאכי",
+    "Psalms": "תהילים", "Proverbs": "משלי", "Job": "איוב", "Song of Songs": "שיר השירים", "Ruth": "רות",
+    "Lamentations": "איכה", "Ecclesiastes": "קהלת", "Esther": "אסתר", "Daniel": "דניאל", "Ezra": "עזרא",
+    "Nehemiah": "נחמיה", "I Chronicles": "דברי הימים א", "II Chronicles": "דברי הימים ב"
+  };
+  function todaysNachYomi() {
+    try {
+      if (!window.hebcal || !hebcal.DailyLearning) return null;
+      var hd = new hebcal.HDate(new Date());
+      var ev = hebcal.DailyLearning.lookup("nachYomi", hd);
+      if (!ev || !ev.k) return null;
+      var heTitle = TANACH_HE[ev.k]; if (!heTitle) return null;
+      var id = findTitleByExactHebrew(heTitle, "תנך");
+      if (id == null) return null;
+      var num = ev.v;
+      return { id: id, label: heTitle + (num ? " " + intToHeb(num) : ""), ref: num ? { num: num, amud: "" } : null };
+    } catch (e) { return null; }
+  }
+  function todaysNine29() {
+    try {
+      if (!window.hebcal || !hebcal.DailyLearning) return null;
+      var hd = new hebcal.HDate(new Date());
+      var ev = hebcal.DailyLearning.lookup("929", hd);
+      if (!ev || !ev.reading || !ev.reading.book) return null;
+      var heTitle = TANACH_HE[ev.reading.book]; if (!heTitle) return null;
+      var id = findTitleByExactHebrew(heTitle, "תנך");
+      if (id == null) return null;
+      var num = ev.reading.bookChap;
+      return { id: id, label: heTitle + (num ? " " + intToHeb(num) : ""), ref: num ? { num: num, amud: "" } : null };
+    } catch (e) { return null; }
+  }
+  function todaysPsalms() {
+    try {
+      if (!window.hebcal || !hebcal.DailyLearning) return null;
+      var hd = new hebcal.HDate(new Date());
+      var ev = hebcal.DailyLearning.lookup("psalms", hd);
+      if (!ev || !ev.reading || !ev.reading.length) return null;
+      var id = findTitleByExactHebrew("תהילים", "תנך");
+      if (id == null) return null;
+      var num = ev.reading[0], num2 = ev.reading[1];
+      var label = "תהילים " + intToHeb(num) + (num2 && num2 !== num ? "–" + intToHeb(num2) : "");
+      return { id: id, label: label, ref: { num: num, amud: "" } };
+    } catch (e) { return null; }
+  }
+  function todaysPerekYomi() {
+    try {
+      if (!window.hebcal || !hebcal.DailyLearning) return null;
+      var hd = new hebcal.HDate(new Date());
+      var ev = hebcal.DailyLearning.lookup("perekYomi", hd);
+      if (!ev || !ev.k) return null;
+      var heTitle = MISHNA_HE[ev.k]; if (!heTitle) return null;
+      var id = findTitleByExactHebrew(heTitle, "משנה");
+      if (id == null) return null;
+      var num = ev.v;
+      var shortHe = heTitle.replace(/^משנה /, "");
+      return { id: id, label: shortHe + (num ? " " + intToHeb(num) : ""), ref: num ? { num: num, amud: "" } : null };
+    } catch (e) { return null; }
+  }
+  // Kitzur Shulchan Aruch is a single, sequentially-numbered work (simanim 1-221, no
+  // chelek split), so a plain siman number is unambiguous -- unlike Arukh HaShulchan or
+  // the Chofetz Chaim's own sefer, which pack multiple independently-numbered sections
+  // into one book file and aren't included here to avoid jumping to the wrong section.
+  function todaysKitzurSA() {
+    try {
+      if (!window.hebcal || !hebcal.DailyLearning) return null;
+      var hd = new hebcal.HDate(new Date());
+      var ev = hebcal.DailyLearning.lookup("kitzurShulchanAruch", hd);
+      if (!ev || !ev.reading || !ev.reading.b) return null;
+      var num = firstIntFromPerek(ev.reading.b);
+      if (!num) return null;
+      return { id: 1940, label: "קיצור שלחן ערוך " + intToHeb(num), ref: { num: num, amud: "" } };
+    } catch (e) { return null; }
+  }
+
+  // Registry of daily-learning cycles offered on the Home screen, with a user-toggleable
+  // on/off preference per cycle (persisted). Order here controls display order.
+  var LEARNING_CYCLES = [
+    { key: "dafYomi", label: "Daf Yomi (Bavli)", fn: todaysDafYomi },
+    { key: "yerushalmi", label: "Daf Yomi (Yerushalmi)", fn: todaysYerushalmiDafYomi },
+    { key: "rambam3", label: "Rambam Yomi (3 perakim)", fn: function () { return todaysRambamCycle("rambam3"); } },
+    { key: "rambam1", label: "Rambam Yomi (1 perek)", fn: function () { return todaysRambamCycle("rambam1"); } },
+    { key: "mishnaYomi", label: "Mishna Yomi", fn: todaysMishnaYomi },
+    { key: "perekYomi", label: "Perek Yomi (Mishna)", fn: todaysPerekYomi },
+    { key: "nachYomi", label: "Nach Yomi", fn: todaysNachYomi },
+    { key: "nine29", label: "929 (Tanach)", fn: todaysNine29 },
+    { key: "psalms", label: "Tehillim (monthly cycle)", fn: todaysPsalms },
+    { key: "kitzurSA", label: "Kitzur Shulchan Aruch", fn: todaysKitzurSA }
+  ];
+  var DEFAULT_LEARNING_ON = ["dafYomi", "yerushalmi", "rambam3", "mishnaYomi", "nachYomi"];
+  var learningPrefs = load("cr-learning-prefs", null);
+  if (!learningPrefs) {
+    learningPrefs = {};
+    LEARNING_CYCLES.forEach(function (c) { learningPrefs[c.key] = DEFAULT_LEARNING_ON.indexOf(c.key) !== -1; });
+  }
+  function persistLearningPrefs() { store("cr-learning-prefs", learningPrefs); }
+  function renderLearnChips(lrow, tabId) {
+    lrow.innerHTML = "";
+    var anyOn = false, anyShown = false;
+    LEARNING_CYCLES.forEach(function (c) {
+      if (!learningPrefs[c.key]) return;
+      anyOn = true;
+      var item = c.fn();
+      if (!item) return;
+      anyShown = true;
+      var lchip = cE("div", "chip chip-daf");
+      lchip.appendChild(document.createTextNode(c.label + ": "));
+      lchip.appendChild(cE("b", "he-val", item.label));
+      lchip.addEventListener("click", function () { loadIntoTab(tabId, item.id, item.ref); });
+      lrow.appendChild(lchip);
+    });
+    if (!anyShown) lrow.appendChild(cE("div", "muted", anyOn ? "Nothing to show today for your selected cycles." : "No daily-learning cycles selected — click “Customize” to choose some."));
+  }
+
   // ---------- settings ----------
   var HL_COLORS = ["#ffe08a", "#a6e3a1", "#9ec5ff", "#f6a5c0", "#f6b26b", "#d5b3ff"];
   var settings = { fontSize: 20, nikud: true, lang: "both", theme: "light",
@@ -61,6 +425,7 @@ window.CR = window.CR || {};
   function persist() { store("cr-reader", settings); }
   var pins = load("cr-pins", []);
   var recent = load("cr-recent", []);
+  var readPos = load("cr-pos", {}); // bookId -> last-read paragraph index, so reopening resumes nearby
 
   // ---------- research tabs (up to 2 shown at once: left pane, optional right/split pane) ----------
   var tabs = load("cr-tabs", null);
@@ -216,6 +581,34 @@ window.CR = window.CR || {};
       }
       w.appendChild(s);
     }
+    var ls = cE("div", "home-sec");
+    var lhead = cE("div", "home-sec-head");
+    lhead.appendChild(cE("h3", null, "Today's Learning"));
+    var custBtn = cE("button", "learn-customize", "Customize");
+    lhead.appendChild(custBtn);
+    ls.appendChild(lhead);
+    var lrow = cE("div", "chip-row");
+    renderLearnChips(lrow, tabId);
+    ls.appendChild(lrow);
+    var pop = cE("div", "learn-popover");
+    var popHint = cE("div", "learn-pop-hint", "Choose which daily-learning cycles appear above:");
+    pop.appendChild(popHint);
+    LEARNING_CYCLES.forEach(function (c) {
+      var row = cE("label", "learn-pop-row");
+      var cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!learningPrefs[c.key];
+      cb.addEventListener("change", function () {
+        learningPrefs[c.key] = cb.checked; persistLearningPrefs(); renderLearnChips(lrow, tabId);
+      });
+      row.appendChild(cb);
+      row.appendChild(document.createTextNode(" " + c.label));
+      pop.appendChild(row);
+    });
+    ls.appendChild(pop);
+    custBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      pop.classList.toggle("open");
+    });
+    w.appendChild(ls);
     section("Saved seforim", pins, "Open a sefer and press “Save” to keep it here for quick access.");
     section("Recently viewed", recent.slice(0, 16), "Seforim you open will appear here.");
     container.appendChild(w);
@@ -223,14 +616,74 @@ window.CR = window.CR || {};
     persistTabs(); renderTabStrip();
   }
 
-  function openBook(id) { loadIntoTab(focusedTabId(), id); }
-  function loadIntoTab(tabId, bookId) {
+  function openBook(id, ref) { loadIntoTab(focusedTabId(), id, ref); }
+  CR.openAt = function (bookId, paraIdx) { loadIntoTab(focusedTabId(), bookId, null, paraIdx); };
+  function loadIntoTab(tabId, bookId, ref, paraIdx) {
     var tab = getTab(tabId); if (!tab) return;
     hideHlMenu(); hideLookup();
-    tab.bookId = bookId; tab.__data = null;
+    tab.bookId = bookId; tab.__data = null; tab.__pendingRef = ref || null;
+    tab.__pendingPara = paraIdx == null ? null : paraIdx;
     persistTabs();
     renderPane(tabId === rightTabId ? "right" : "left");
     renderTabStrip();
+  }
+  function jumpToParagraph(container, paraIdx) {
+    var art = container.querySelector("article.book"); if (!art) return false;
+    var units = art.querySelectorAll(art.querySelector(".seg-row") ? ".seg-row" : "p");
+    var el = units[paraIdx]; if (!el) return false;
+    el.scrollIntoView({ block: "center" });
+    el.classList.add("fts-hit");
+    setTimeout(function () { el.classList.remove("fts-hit"); }, 2200);
+    return true;
+  }
+  function nearestUnitIdx(container) {
+    var art = container.querySelector("article.book"); if (!art) return null;
+    var units = art.querySelectorAll(art.querySelector(".seg-row") ? ".seg-row" : "p");
+    if (!units.length) return null;
+    var top = container.getBoundingClientRect().top, best = 0, bestDist = Infinity;
+    units.forEach(function (u, i) {
+      var d = Math.abs(u.getBoundingClientRect().top - top);
+      if (d < bestDist) { bestDist = d; best = i; }
+    });
+    return best;
+  }
+  // best-effort "where am I" string for the focused pane: sefer title + the deepest
+  // headings currently scrolled to the top of the pane (works for any sefer's heading structure)
+  function currentLocationText(side) {
+    var s = side || focusedSide;
+    var container = paneEl(s); if (!container) return null;
+    var art = container.querySelector("article.book"); if (!art) return null;
+    var tab = getTab(s === "right" ? rightTabId : leftTabId);
+    var title = tab ? tab.title : null;
+    var isBi = !!art.querySelector(".sec-label");
+    var nodes = isBi ? art.querySelectorAll(".sec-label") : art.querySelectorAll("h1, h2, h3");
+    var top = container.getBoundingClientRect().top;
+    var byLvl = {};
+    nodes.forEach(function (h) {
+      if (h.getBoundingClientRect().top - top > 24) return;
+      var lvl = isBi ? 2 : +h.tagName.charAt(1);
+      byLvl[lvl] = h.textContent.trim();
+    });
+    var lvls = Object.keys(byLvl).map(Number).sort(function (a, b) { return a - b; });
+    if (lvls.length && lvls[0] === 1 && byLvl[1] === title) lvls.shift();
+    var path = lvls.map(function (l) { return byLvl[l]; }).join(" · ");
+    if (!title) return path || null;
+    return path ? title + ", " + path : title;
+  }
+  function copyCurrentLocation() {
+    var text = currentLocationText();
+    if (!text) { flash("Nothing open to copy."); return; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { flash("Copied: " + text); }, function () { flash("Could not copy — clipboard access denied."); });
+    } else { flash("Clipboard not available in this browser."); }
+  }
+  function saveScrollPos(side) {
+    var tab = getTab(side === "right" ? rightTabId : leftTabId);
+    if (!tab || tab.bookId == null) return;
+    var idx = nearestUnitIdx(paneEl(side));
+    if (idx == null) return;
+    readPos[tab.bookId] = idx;
+    store("cr-pos", readPos);
   }
   function renderPane(side) {
     var tabId = side === "right" ? rightTabId : leftTabId;
@@ -263,6 +716,9 @@ window.CR = window.CR || {};
         syncToolbarForFocused();
       }
       applyHighlightsInto(container, bookId);
+      if (tab.__pendingRef) { jumpToRef(container, tab.__pendingRef); tab.__pendingRef = null; }
+      else if (tab.__pendingPara != null) { jumpToParagraph(container, tab.__pendingPara); tab.__pendingPara = null; }
+      else if (readPos[bookId] != null) { jumpToParagraph(container, readPos[bookId]); }
       persistTabs(); renderTabStrip();
     });
   }
@@ -336,18 +792,35 @@ window.CR = window.CR || {};
   }
 
   // ---------- title search ----------
+  function titleHits(q, cap) {
+    cap = cap || 60;
+    var lc = q.toLowerCase(), hits = [];
+    for (var i = 0; i < CR.titles.length && hits.length < cap; i++) if (CR.titles[i][1].toLowerCase().indexOf(lc) !== -1) hits.push(CR.titles[i]);
+    return hits;
+  }
   function runSearch(q) {
     var res = $("#searchres"); q = (q || "").trim();
     if (q.length < 2) { res.style.display = "none"; res.innerHTML = ""; return; }
-    var lc = q.toLowerCase(), hits = [];
-    for (var i = 0; i < CR.titles.length && hits.length < 60; i++) if (CR.titles[i][1].toLowerCase().indexOf(lc) !== -1) hits.push(CR.titles[i]);
+    var hits = titleHits(q), ref = null;
+    if (!hits.length) {
+      var parsed = parseQueryRef(q);
+      if (parsed && parsed.title.length >= 2) {
+        var hits2 = titleHits(parsed.title, Infinity);
+        if (hits2.length) {
+          hits2.sort(function (a, b) { return (b[1] === parsed.title ? 1 : 0) - (a[1] === parsed.title ? 1 : 0); });
+          hits = hits2.slice(0, 60); ref = parsed;
+        }
+      }
+    }
     res.innerHTML = "";
     if (!hits.length) res.appendChild(cE("div", "muted", "No titles match."));
     hits.forEach(function (t) {
       var it = cE("div", "sr-item");
       it.appendChild(cE("div", "sr-title", t[1]));
-      if (t[2]) it.appendChild(cE("div", "sr-cat", t[2]));
-      it.addEventListener("click", function () { openBook(t[0]); res.style.display = "none"; $("#search").value = ""; });
+      var catTxt = t[2] || "";
+      if (ref) catTxt += (catTxt ? " · " : "") + "→ " + intToHeb(ref.num) + (ref.amud || "");
+      if (catTxt) it.appendChild(cE("div", "sr-cat", catTxt));
+      it.addEventListener("click", function () { openBook(t[0], ref); res.style.display = "none"; $("#search").value = ""; });
       res.appendChild(it);
     });
     res.style.display = "block";
@@ -584,18 +1057,38 @@ window.CR = window.CR || {};
   }
 
   // ---------- data export / import ----------
-  function exportData() {
+  // Opens a real "Save As" dialog on browsers that support the File System Access API
+  // (Chrome/Edge), so the file can be saved straight back onto this drive. Falls back to
+  // a normal silent download (Firefox/Safari, or any file:// context that lacks the API).
+  async function saveBlob(blob, suggestedName, description, mimeType, extensions) {
+    if (window.showSaveFilePicker) {
+      try {
+        var accept = {}; accept[mimeType] = extensions;
+        var handle = await window.showSaveFilePicker({ suggestedName: suggestedName, types: [{ description: description, accept: accept }] });
+        var writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        return true;
+      } catch (e) {
+        if (e && e.name === "AbortError") return false; // user cancelled the save dialog — don't also silently download
+        // otherwise fall through to the legacy download below
+      }
+    }
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = suggestedName;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 100);
+    return true;
+  }
+  async function exportData() {
     var data = { _cr_export: true, _date: new Date().toISOString() };
     for (var i = 0; i < localStorage.length; i++) {
       var k = localStorage.key(i);
       if (k && k.indexOf("cr-") === 0) data[k] = localStorage.getItem(k);
     }
     var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    var a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "computer-rabbis-data.json";
-    a.click();
-    URL.revokeObjectURL(a.href);
+    await saveBlob(blob, "computer-rabbis-data.json", "JSON data file", "application/json", [".json"]);
   }
   function importData(file) {
     var reader = new FileReader();
@@ -685,6 +1178,7 @@ window.CR = window.CR || {};
     $("#btn-home").addEventListener("click", function () { loadIntoTab(focusedTabId(), null); });
     $("#btn-highlight").addEventListener("click", function (e) { e.stopPropagation(); addHighlight(); });
     $("#btn-pin").addEventListener("click", togglePin);
+    $("#btn-copyloc").addEventListener("click", copyCurrentLocation);
     $("#btn-print").addEventListener("click", function () { window.print(); });
 
     // highlight menu
@@ -694,6 +1188,9 @@ window.CR = window.CR || {};
     // dictionary panel
     $("#btn-dict").addEventListener("click", function () { if (window.CRDict) CRDict.togglePanel(); });
     $("#dict-close").addEventListener("click", function () { if (window.CRDict) CRDict.closePanel(); });
+
+    // full-text search panel
+    $("#btn-fts").addEventListener("click", function () { if (window.CRSearch) CRSearch.togglePanel(); });
     $("#lookup-btn").addEventListener("click", function () {
       var word = $("#lookup-fab")._word;
       hideLookup();
@@ -705,6 +1202,15 @@ window.CR = window.CR || {};
     var paneLeft = $("#pane-left"), paneRight = $("#pane-right");
     paneLeft.addEventListener("mousedown", function () { setFocusedSide("left"); });
     paneRight.addEventListener("mousedown", function () { setFocusedSide("right"); });
+
+    // remember reading position per sefer, so reopening it (Home, pins, next session) resumes nearby
+    var scrollSaveT = { left: null, right: null };
+    ["left", "right"].forEach(function (side) {
+      paneEl(side).addEventListener("scroll", function () {
+        clearTimeout(scrollSaveT[side]);
+        scrollSaveT[side] = setTimeout(function () { saveScrollPos(side); }, 700);
+      });
+    });
 
     // selection -> look-up affordance (both panes)
     ["#reader", "#reader2"].forEach(function (sel) {
@@ -720,6 +1226,44 @@ window.CR = window.CR || {};
       if (!e.target.closest("#toc") && e.target.id !== "toc-btn" && !e.target.closest("#toc-btn")) $("#toc").style.display = "none";
       if (!e.target.closest("#hl-menu") && !(e.target.tagName === "MARK" && e.target.classList.contains("hl"))) hideHlMenu();
       if (!e.target.closest("#settings-panel") && e.target.id !== "btn-settings" && !e.target.closest("#btn-settings")) { var sp = $("#settings-panel"); if (sp) sp.style.display = "none"; }
+      if (!e.target.closest(".learn-popover") && !e.target.closest(".learn-customize")) {
+        document.querySelectorAll(".learn-popover.open").forEach(function (p) { p.classList.remove("open"); });
+      }
+    });
+
+    // keyboard shortcuts
+    document.addEventListener("keydown", function (e) {
+      var tag = (e.target.tagName || "").toLowerCase();
+      var typing = tag === "input" || tag === "textarea" || tag === "select" || e.target.isContentEditable;
+
+      if (e.key === "Escape") {
+        if (typing) e.target.blur();
+        if (document.fullscreenElement) document.exitFullscreen && document.exitFullscreen();
+        setSearchOpen(false);
+        $("#toc").style.display = "none";
+        hideHlMenu();
+        hideLookup();
+        var sp = $("#settings-panel"); if (sp) sp.style.display = "none";
+        document.querySelectorAll(".learn-popover.open").forEach(function (p) { p.classList.remove("open"); });
+        if (window.CRDict) CRDict.closePanel();
+        if (window.CRSearch) CRSearch.closePanel();
+        return;
+      }
+
+      if (typing) {
+        if (e.key === "Enter" && e.target === searchInp) {
+          var first = $("#searchres .sr-item");
+          if (first) first.click();
+        }
+        return;
+      }
+
+      if (e.key === "/") {
+        e.preventDefault();
+        setSearchOpen(true);
+      } else if (e.key === "f" || e.key === "F") {
+        toggleFull();
+      }
     });
 
     if (CR.tree.length) CR.ready();

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quick-Start Card — Computer Rabbis Offline Torah Drive</title>
+<link rel="icon" type="image/png" href="brand/computer-rabbis-icon.png">
+<style>
+  :root { --navy:#232936; --navy2:#2f3747; --coral:#ee9f7e; --cream:#faf7f0; --ink:#22252b; --muted:#6b7280; --line:#e5e0d4; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; }
+  body { background:#dcd6c6; color:var(--ink); font-family:Georgia,"Times New Roman","Noto Serif Hebrew",serif; }
+  .sheet { max-width:720px; margin:26px auto; background:var(--cream); border:1px solid var(--line); box-shadow:0 2px 10px rgba(0,0,0,.15); }
+  .hero { background:var(--navy); color:#fff; text-align:center; padding:26px 20px 22px; border-bottom:6px solid var(--coral); }
+  .hero img.logo { width:74px; height:74px; display:block; margin:0 auto 8px; }
+  .hero .brand { color:var(--coral); letter-spacing:.18em; text-transform:uppercase; font-size:.85rem; }
+  .hero h1 { font-size:1.7rem; margin:8px 0 4px; font-weight:normal; }
+  .hero .he { font-size:1.25rem; color:#cdd6ea; direction:rtl; }
+  main { padding:22px 34px 8px; }
+  h2 { color:var(--navy); font-weight:normal; font-size:1.25rem; border-bottom:2px solid var(--coral); display:inline-block; padding-bottom:2px; margin:0 0 12px; }
+  .steps { counter-reset:step; list-style:none; padding:0; margin:0 0 8px; }
+  .steps li { counter-increment:step; position:relative; padding:0 0 14px 44px; font-size:1.15rem; line-height:1.45; }
+  .steps li::before { content:counter(step); position:absolute; left:0; top:-2px; width:30px; height:30px; border-radius:50%; background:var(--navy); color:var(--coral); font-family:Georgia,serif; font-size:1rem; display:flex; align-items:center; justify-content:center; }
+  .path { background:#f2efe6; border:1px solid var(--line); border-radius:5px; padding:1px 8px; font-family:Consolas,monospace; font-size:.95em; }
+  .whats-on { padding:0; margin:0 0 14px; list-style:none; }
+  .whats-on li { padding:8px 0 8px 0; border-top:1px solid var(--line); font-size:1.05rem; line-height:1.5; }
+  .whats-on li:first-child { border-top:none; }
+  .whats-on b { color:var(--navy); }
+  .note { background:#fff; border:1px solid var(--line); border-radius:8px; padding:12px 16px; font-size:1rem; text-align:center; margin:10px 0 20px; }
+  footer { padding:0 34px 24px; text-align:center; color:var(--muted); font-size:.9rem; }
+  .toolbar { max-width:720px; margin:0 auto 14px; text-align:center; }
+  .toolbar button { font:inherit; font-size:1rem; background:var(--navy2); color:#fff; border:none; border-radius:8px; padding:10px 22px; cursor:pointer; }
+  .toolbar button:hover { filter:brightness(1.15); }
+  .toolbar p { color:var(--muted); font-size:.85rem; margin:6px 0 0; }
+  @media print {
+    body { background:#fff; }
+    .no-print { display:none; }
+    .sheet { margin:0; border:none; box-shadow:none; max-width:none; }
+    @page { margin:0.5in; }
+  }
+</style>
+</head>
+<body>
+<div class="toolbar no-print">
+  <button onclick="window.print()">Print this card</button>
+  <p>One page · prints fine in black &amp; white</p>
+</div>
+<div class="sheet">
+  <div class="hero">
+    <img class="logo" src="brand/computer-rabbis-logo.png" alt="Computer Rabbis">
+    <div class="brand">Computer Rabbis</div>
+    <h1>The Offline Torah Drive</h1>
+    <div class="he">תורה שלמה בכיס — בלי אינטרנט</div>
+  </div>
+  <main>
+    <h2>How to open it</h2>
+    <ol class="steps">
+      <li>Plug this drive into any Windows or Mac computer.</li>
+      <li>Open it, the same way you'd open any drive or folder.</li>
+      <li>Double-click the file named <span class="path">START-HERE</span>.</li>
+      <li>It opens right in your web browser. That's it.</li>
+    </ol>
+    <div class="note">Nothing to install. Nothing connects to the internet.<br>Safe to plug into any computer.</div>
+
+    <h2>What's on it</h2>
+    <ul class="whats-on">
+      <li><b>Library</b> — thousands of seforim: Tanach, Mishnah, Talmud Bavli &amp; Yerushalmi, Rambam,
+      Shulchan Aruch, Mishnah Berurah, midrash, mussar, chassidus, and more.</li>
+      <li><b>Zmanim &amp; Luach</b> — zmanim and Hebrew dates for anywhere on earth, any date, past or future.</li>
+      <li><b>Dictionaries</b> — look up any Hebrew or Aramaic word across three dictionaries.</li>
+    </ul>
+  </main>
+  <footer>
+    Questions or a fresh copy of this drive: <b>computerrabbis.com</b>
+  </footer>
+</div>
+</body>
+</html>

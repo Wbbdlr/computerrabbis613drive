@@ -4,15 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Jewish Calendar &amp; Zmanim Toolkit — Computer Rabbis</title>
+<link rel="icon" type="image/png" href="../brand/computer-rabbis-icon.png">
 <style>
-  :root { --navy:#232936; --navy2:#2f3747; --gold:#ee9f7e; --coral:#ee9f7e; --cream:#faf7f0; --ink:#22252b; --muted:#6b7280; --line:#e5e0d4; --card:#fff; --accent:#2f4f8f; }
+  :root { --navy:#232936; --navy2:#2f3747; --gold:#ee9f7e; --coral:#ee9f7e; --cream:#faf7f0; --ink:#22252b; --muted:#6b7280; --line:#e5e0d4; --card:#fff; --accent:#2f4f8f; --bg:#faf7f0; --tint:#f2efe6; }
+  body[data-theme="sepia"] { --bg:#f4ecd8; --card:#faf3e2; --tint:#efe6cf; --line:#ddd0b0; }
+  body[data-theme="dark"] { --bg:#1c2028; --card:#262c37; --tint:#2f3747; --ink:#e6e6e6; --muted:#9aa3b2; --line:#3a414f; }
+  body[data-theme="night"] { --bg:#0d1013; --card:#161b22; --tint:#1b2027; --ink:#c9d1d9; --muted:#8b949e; --line:#2a2f37; }
   * { box-sizing:border-box; }
-  body { margin:0; background:var(--cream); color:var(--ink); font-family:Georgia,"Times New Roman","Noto Serif Hebrew",serif; line-height:1.45; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:Georgia,"Times New Roman","Noto Serif Hebrew",serif; line-height:1.45; }
   header { background:var(--navy); color:#fff; padding:16px 20px 0; border-bottom:4px solid var(--gold); }
   header .brandrow { display:flex; align-items:center; gap:12px; }
   header img.logo { width:52px; height:52px; flex:none; display:block; }
-  header .drive-home { margin-inline-start:auto; color:#eaeef6; text-decoration:none; border:1px solid #3a4353; background:var(--navy2); border-radius:6px; padding:7px 14px; font-size:.85rem; }
+  header .navlinks { margin-inline-start:auto; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  header .drive-home { color:#eaeef6; text-decoration:none; border:1px solid #3a4353; background:var(--navy2); border-radius:6px; padding:7px 14px; font-size:.85rem; }
   header .drive-home:hover { background:#3a4353; }
+  .theme-pick { display:flex; gap:4px; }
+  .theme-pick button { border:1px solid #3a4353; background:var(--navy2); color:#cdd6ea; border-radius:6px; padding:6px 9px; font-size:.78rem; cursor:pointer; font:inherit; }
+  .theme-pick button.active { background:var(--coral); color:var(--navy); border-color:var(--coral); font-weight:bold; }
   header .brand { font-size:1rem; letter-spacing:.12em; text-transform:uppercase; color:var(--gold); }
   header h1 { margin:2px 0 2px; font-size:1.5rem; font-weight:normal; }
   header .sub { color:#cdd6ea; font-size:.9rem; margin-bottom:12px; }
@@ -24,7 +32,7 @@
   .controls { display:flex; flex-wrap:wrap; gap:14px; align-items:flex-end; }
   .field { display:flex; flex-direction:column; gap:4px; }
   .field label { font-size:.78rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
-  select,input,button { font:inherit; padding:7px 10px; border:1px solid #c9c3b4; border-radius:7px; background:#fff; color:var(--ink); }
+  select,input,button { font:inherit; padding:7px 10px; border:1px solid #c9c3b4; border-radius:7px; background:var(--card); color:var(--ink); }
   select { max-width:340px; }
   button.go { cursor:pointer; background:var(--navy2); color:#fff; border-color:var(--navy2); }
   button.ghost { cursor:pointer; background:#fff; color:var(--navy2); }
@@ -39,7 +47,9 @@
   td.he,.he { direction:rtl; }
   table.zmanim td.he { text-align:right; color:var(--muted); }
   table.zmanim td.time { font-variant-numeric:tabular-nums; font-weight:bold; color:var(--navy); white-space:nowrap; }
-  tr.group td { background:#f2efe6; color:var(--navy); font-size:.82rem; text-transform:uppercase; letter-spacing:.08em; border-bottom:none; font-weight:bold; }
+  table.zmanim td.src { font-size:.8rem; color:var(--muted); }
+  table.zmanim td.src code,.legend code { background:var(--tint); border:1px solid var(--line); border-radius:4px; padding:0 4px; font-size:.85em; }
+  tr.group td { background:var(--tint); color:var(--navy); font-size:.82rem; text-transform:uppercase; letter-spacing:.08em; border-bottom:none; font-weight:bold; }
   .two-col { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   @media (max-width:720px){ .two-col { grid-template-columns:1fr; } }
   .shabbos h3 { margin:0 0 8px; color:var(--navy); }
@@ -52,9 +62,18 @@
   table.month { width:100%; border-collapse:collapse; font-size:.85rem; }
   table.month th,table.month td { border:1px solid var(--line); padding:4px 6px; text-align:center; font-variant-numeric:tabular-nums; }
   table.month th { background:var(--navy); color:#fff; font-weight:normal; }
-  table.month tr.shabbosrow { background:#f5efdd; }
+  table.month tr.shabbosrow { background:var(--tint); }
   .errbox { background:#7a1f1f; color:#fff; padding:14px 16px; border-radius:8px; }
-  .outbox { margin-top:12px; padding:12px 14px; background:#f7f4ea; border-radius:8px; }
+  .outbox { margin-top:12px; padding:12px 14px; background:var(--tint); border-radius:8px; }
+  .tabbar button.active { background:var(--card) !important; }
+  /* dark/night contrast: navy/accent text is unreadable against dark card backgrounds */
+  body[data-theme="dark"] button.ghost, body[data-theme="dark"] table.zmanim td.time, body[data-theme="dark"] tr.group td,
+  body[data-theme="dark"] .shabbos h3, body[data-theme="dark"] .shabbos .big, body[data-theme="dark"] .big,
+  body[data-theme="dark"] .today-strip .item b, body[data-theme="dark"] main h3[style*="navy"], body[data-theme="dark"] .tabbar button.active,
+  body[data-theme="night"] button.ghost, body[data-theme="night"] table.zmanim td.time, body[data-theme="night"] tr.group td,
+  body[data-theme="night"] .shabbos h3, body[data-theme="night"] .shabbos .big, body[data-theme="night"] .big,
+  body[data-theme="night"] .today-strip .item b, body[data-theme="night"] main h3[style*="navy"], body[data-theme="night"] .tabbar button.active
+  { color:var(--coral) !important; }
   @media print { header,.tabbar,.card.controlscard,.card.dailycard,.card.shabboscard,.noprint,footer .noprint { display:none !important; } body { background:#fff; } .card { border:none; box-shadow:none; padding:0; } #monthcard { display:block !important; } }
 </style>
 </head>
@@ -67,7 +86,17 @@
       <a href="https://computerrabbis.com" target="_blank" rel="noopener noreferrer" class="brand" style="text-decoration:none">Computer Rabbis</a>
       <h1>Jewish Calendar &amp; Zmanim Toolkit <span style="color:var(--gold)">· זמנים ולוח</span></h1>
     </div>
-    <a href="../START-HERE.html" class="drive-home">Drive Home</a>
+    <div class="navlinks">
+      <a href="../Library-Web/index.html" class="drive-home">Library</a>
+      <a href="../Library-Web/dictionaries.html" class="drive-home">Dictionaries</a>
+      <a href="../START-HERE.html" class="drive-home">Drive Home</a>
+      <div class="theme-pick" id="theme-pick">
+        <button data-t="light" title="Light">Light</button>
+        <button data-t="sepia" title="Sepia">Sepia</button>
+        <button data-t="dark" title="Dark">Dark</button>
+        <button data-t="night" title="Night">Night</button>
+      </div>
+    </div>
   </div>
   <div class="sub">Fully offline — zmanim, dates, holidays &amp; yahrzeits for any place, any year, forever. No internet needed.</div>
   <div class="tabbar">
@@ -104,6 +133,9 @@
         </div>
         <div class="field"><label>Candles (min before shkia)</label><input type="number" id="candlemin" min="0" max="60" step="1" value="18" style="width:80px"></div>
         <div class="field"><label>Elevation</label><span><input type="checkbox" id="useelev"> <span class="note">use for netz/shkia</span></span></div>
+        <div class="field"><label>Seconds</label><span><input type="checkbox" id="showseconds"> <span class="note">show in every time</span></span></div>
+        <div class="field"><label>More zmanim</label><span><input type="checkbox" id="showextra"> <span class="note">Baal HaTanya, Ateret Torah &amp; other shitos</span></span></div>
+        <div class="field"><label>Show method</label><span><input type="checkbox" id="showsource"> <span class="note">which tool &amp; shita computed each time</span></span></div>
       </div>
       <details style="margin-top:10px">
         <summary class="note" style="cursor:pointer">Custom coordinates (for anywhere not in the list)</summary>
@@ -120,6 +152,25 @@
       <div class="card">
         <table class="zmanim" id="ztable"></table>
         <p class="note" style="margin-bottom:0">Times use the selected location’s time zone (via your computer’s clock/timezone rules).</p>
+        <details class="legend" style="margin-top:10px">
+          <summary class="note" style="cursor:pointer">Which tool, and what do GR&quot;A / MG&quot;A / Baal HaTanya / Ateret Torah mean?</summary>
+          <div class="note" style="margin-top:8px">
+            <p style="margin:0 0 8px"><b>Engine:</b> every time on this page is computed by <b>KosherZmanim</b> (a JavaScript
+            port of the KosherJava Zmanim library), directly on this computer from the location’s coordinates — nothing is
+            looked up online. Turn on <b>Show method</b> above to see the exact <code>get…()</code> call and calculation
+            basis behind each row.</p>
+            <p style="margin:0 0 8px"><b>GR&quot;A</b> (Vilna Gaon) — the halachic day runs sunrise to sunset, split into 12
+            equal “shaos zmaniyos.”<br>
+            <b>MG&quot;A</b> (Magen Avraham) — the halachic day instead runs from alos (dawn) to tzeis (nightfall).<br>
+            <b>Baal HaTanya</b> — the Chabad-tradition alos/tzeis pair and shaos zmaniyos.<br>
+            <b>Ateret Torah</b> — the alos/tzeis pair used by Yeshiva Ateret Torah.<br>
+            <b>Rabbeinu Tam / ר&quot;ת</b> — nightfall as a fixed number of minutes after sunset, rather than a sun-degree.<br>
+            <b>Geonim</b> — nightfall when the sun reaches a set number of degrees below the horizon (8.5° shown here).</p>
+            <p style="margin:0">These are orientation summaries, not psak — for halacha l’maaseh, especially any stringency
+            or leniency, consult your Rav. See <a href="../SOURCES-AND-DATES.html">Sources &amp; data dates</a> for engine
+            versions and licenses.</p>
+          </div>
+        </details>
       </div>
       <div>
         <div class="card shabbos shabboscard" id="shabboscard"></div>
@@ -268,6 +319,9 @@
       <p class="note" style="margin-top:0">Common shiurim in modern units. Two widely-cited opinions are
       shown: <b>Rav Chaim Naeh</b> (the smaller, common Sephardi/many Ashkenazi practice) and the
       <b>Chazon Ish</b> (the larger, machmir). Values are approximate and rounded.</p>
+      <div class="controls" style="margin-bottom:10px">
+        <div class="field"><label>Units</label><span><input type="checkbox" id="sh-imperial"> <span class="note">show inches / fl oz / lb / mi as the primary unit (metric shown in parens)</span></span></div>
+      </div>
       <div id="shiur-out"></div>
       <div class="outbox" style="margin-top:14px">
         <b>Convert an amount:</b>
@@ -312,12 +366,34 @@
 <footer>
   <hr>
   <p><b>A word on reliability:</b> zmanim are computed astronomically from the coordinates shown (KosherZmanim engine); calendar, holiday and yahrzeit dates use the @hebcal/core engine. Minhagim differ and printed luchos may vary by a minute or two. For halacha l’maaseh — candle lighting, fast times, the first-year yahrzeit — consult your Rav and your community’s luach.</p>
-  <p class="note">Part of the <b>Computer Rabbis Offline Torah Drive</b>. Engines: KosherZmanim v0.9.0 (LGPL-2.1) &amp; @hebcal/core v6.6.0 (GPL-2.0). Calendar &amp; zmanim are perpetual astronomical/arithmetic calculations — they do not expire. See <a href="../SOURCES-AND-DATES.html">Sources &amp; data dates</a> and the <b>licenses</b> folder on this drive. Independent product; not affiliated with or endorsed by Hebcal, Sefaria, or the Otzaria project.</p>
+  <p class="note">Part of the <b>Computer Rabbis Offline Torah Drive</b>. Engines: KosherZmanim v0.9.0 (LGPL-3.0) &amp; @hebcal/core v6.7.0 (GPL-2.0). Calendar &amp; zmanim are perpetual astronomical/arithmetic calculations — they do not expire. See <a href="../SOURCES-AND-DATES.html">Sources &amp; data dates</a> and the <b>licenses</b> folder on this drive. Independent product; not affiliated with or endorsed by Hebcal, Sefaria, or the Otzaria project.</p>
 </footer>
 
 <script src="kosher-zmanim.min.js"></script>
 <script src="hebcal.bundle.min.js"></script>
 <script src="cities.js"></script>
 <script src="toolkit.js"></script>
+<script>
+(function () {
+  var KEY = "cr-zmanim-theme";
+  var t = "light";
+  try { t = localStorage.getItem(KEY) || "light"; } catch (e) {}
+  document.body.setAttribute("data-theme", t);
+  function sync() {
+    document.querySelectorAll("#theme-pick button").forEach(function (b) {
+      b.classList.toggle("active", b.getAttribute("data-t") === t);
+    });
+  }
+  document.querySelectorAll("#theme-pick button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      t = b.getAttribute("data-t");
+      document.body.setAttribute("data-theme", t);
+      try { localStorage.setItem(KEY, t); } catch (e) {}
+      sync();
+    });
+  });
+  sync();
+})();
+</script>
 </body>
 </html>

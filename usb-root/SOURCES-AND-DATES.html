@@ -4,8 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sources &amp; Data Dates — Computer Rabbis Offline Torah Drive</title>
+<link rel="icon" type="image/png" href="brand/computer-rabbis-icon.png">
 <style>
-  :root { --navy:#1b2a4a; --gold:#c9a227; --cream:#faf7f0; --ink:#22252b; --muted:#6b7280; --line:#e5e0d4; }
+  :root { --navy:#232936; --gold:#ee9f7e; --coral:#ee9f7e; --cream:#faf7f0; --ink:#22252b; --muted:#6b7280; --line:#e5e0d4; }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--cream); color:var(--ink); font-family:Georgia,"Times New Roman",serif; line-height:1.55; }
   header { background:var(--navy); color:#fff; padding:22px 24px; border-bottom:4px solid var(--gold); }
@@ -31,7 +32,7 @@
 </header>
 <main>
   <div class="card">
-    <p class="big">This drive was assembled on <b id="builddate">2026-07-12</b>.</p>
+    <p class="big">This drive was assembled on <b id="builddate">2026-07-19</b>.</p>
     <p>Two kinds of content live here, and they age very differently:</p>
     <ul>
       <li><b>Calculations (zmanim, Hebrew calendar, holidays, yahrzeits)</b> — these are computed by
@@ -80,8 +81,9 @@
     <h2>Calculation engines — versions</h2>
     <table>
       <tr><th>Engine</th><th>What it powers</th><th>Version (release date)</th><th>License</th></tr>
-      <tr><td><b>@hebcal/core</b></td><td>Hebrew dates, holidays, parsha, yahrzeits, candle-lighting, .ics export</td><td>v6.6.0 <span class="muted">(Jun 19, 2026)</span></td><td>GPL-2.0</td></tr>
-      <tr><td><b>KosherZmanim</b> <span class="muted">(KosherJava port)</span></td><td>Precise zmanim by all major shitos</td><td>v0.9.0 <span class="muted">(Mar 23, 2025)</span></td><td>LGPL-2.1</td></tr>
+      <tr><td><b>@hebcal/core</b></td><td>Hebrew dates, holidays, parsha, yahrzeits, candle-lighting, .ics export</td><td>v6.7.0 <span class="muted">(Jul 15, 2026)</span></td><td>GPL-2.0</td></tr>
+      <tr><td><b>@hebcal/learning</b></td><td>Daf Yomi, Rambam Yomi (3 perakim/day), Mishna Yomi, and other daily-learning cycles</td><td>v6.9.5 <span class="muted">(Jun 7, 2026)</span></td><td>BSD-2-Clause</td></tr>
+      <tr><td><b>KosherZmanim</b> <span class="muted">(KosherJava port)</span></td><td>Precise zmanim by all major shitos</td><td>v0.9.0 <span class="muted">(Mar 23, 2025)</span></td><td>LGPL-3.0</td></tr>
     </table>
     <p class="muted">Version dates are when the software was released, not a limit on the calculations —
     the zmanim and calendar remain accurate indefinitely.</p>
@@ -91,7 +93,7 @@
     <h2>Updates</h2>
     <p>This platform is published as an open project. The latest edition — a single folder you can copy
     onto any USB drive or SD card — is available at:</p>
-    <p class="big" id="repolink">github.com/ComputerRabbis/offline-torah-drive <span class="muted">(link to be finalized)</span></p>
+    <p class="big" id="repolink"><a href="https://github.com/Wbbdlr/computerrabbis613drive" target="_blank" rel="noopener noreferrer">github.com/Wbbdlr/computerrabbis613drive</a></p>
     <p class="muted">Because the calculations never expire, a drive never <i>needs</i> updating to keep
     telling you correct zmanim and dates. New editions mainly add seforim and refresh the text snapshot.</p>
   </div>

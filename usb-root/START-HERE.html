@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Computer Rabbis — Offline Torah Drive</title>
+<link rel="icon" type="image/png" href="brand/computer-rabbis-icon.png">
 <style>
   :root { --navy:#232936; --navy2:#2f3747; --gold:#ee9f7e; --coral:#ee9f7e; --cream:#faf7f0; --ink:#22252b; --muted:#6b7280; --line:#e5e0d4; }
   * { box-sizing: border-box; }
@@ -28,6 +29,12 @@
   footer hr { border:none; border-top:1px solid var(--line); }
   ul.contents li { margin:4px 0; }
   .heb { direction:rtl; unicode-bidi:embed; }
+  .update-banner { max-width:880px; margin:14px auto 0; padding:12px 18px; background:#fdf3ec; border:1px solid var(--coral); border-radius:10px; display:flex; align-items:center; gap:12px; font-size:.92rem; }
+  .update-banner b { color:var(--navy); }
+  .update-banner button { background:none; border:none; cursor:pointer; padding:4px; margin-inline-start:auto; flex:none; line-height:0; }
+  .update-banner button svg { width:16px; height:16px; }
+  .update-banner button svg path { stroke:var(--muted); stroke-width:2; stroke-linecap:round; }
+  .update-banner button:hover svg path { stroke:var(--navy); }
 </style>
 </head>
 <body>
@@ -42,6 +49,14 @@
   entirely on this drive. <b>No internet. No installation. No updates. Ever.</b></p>
 </div>
 <main>
+  <div class="update-banner" id="update-banner">
+    <span><b>New in this build:</b> full-text search across every sefer, jump straight to a daf or
+    perek by typing its reference, a Daf/Rambam/Mishna Yomi shortcut on the Library home, and more
+    zmanim shitos (with seconds) on the Zmanim tab.</span>
+    <button id="ub-close" aria-label="Dismiss">
+      <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
   <div class="card">
     <h2>What is this?</h2>
     <p>This drive carries a library of <b>thousands of seforim</b> — Tanach with meforshim, Mishnah,
@@ -105,14 +120,19 @@
 
   <div class="card">
     <h2>About &amp; credits</h2>
-    <p>Assembled and distributed by <b>Computer Rabbis</b> (<a href="https://computerrabbis.com" target="_blank" rel="noopener noreferrer">computerrabbis.com</a>) — honest, capable computer help for our
+    <p>Assembled and distributed by <a href="https://computerrabbis.com" target="_blank" rel="noopener noreferrer"><b>Computer Rabbis</b></a> — honest, capable computer help for our
     community. Visit us (when you're online!) for service, or pass this drive to a friend.</p>
     <ul class="contents muted">
       <li>Library texts courtesy of <b>Sefaria</b> (sefaria.org), <b>Dicta</b> (dicta.org.il), Hebrew
       Wikisource, the Ben-Yehuda Project, and Orayta — under their respective open licenses (see the
       <span class="path">licenses</span> folder).</li>
       <li>Library software: <b>Otzaria</b> (github.com/sivan22/otzaria), public-domain (Unlicense).</li>
-      <li>Zmanim engine: <b>KosherZmanim</b> (LGPL-2.1), a port of the KosherJava Zmanim library.</li>
+      <li>Calendar &amp; daily-learning engine: <b>Hebcal</b> (hebcal.com) — <span class="path">@hebcal/core</span>
+      (GPL-2.0) and <span class="path">@hebcal/learning</span> (BSD-2-Clause) — powers Hebrew dates, holidays,
+      parsha, yahrzeits, candle-lighting, and Daf/Rambam/Mishna Yomi.</li>
+      <li>Zmanim engine: <b>KosherZmanim</b> (LGPL-3.0), a port of the KosherJava Zmanim library.</li>
+      <li>Full engine versions and license texts: see <a href="SOURCES-AND-DATES.html">Sources &amp; data
+      dates</a> and the <span class="path">licenses</span> folder.</li>
       <li>This product is independent and is not affiliated with or endorsed by Sefaria, Dicta, Hebcal,
       or the Otzaria project.</li>
     </ul>
@@ -122,6 +142,23 @@
   <hr>
   <p>© Computer Rabbis · This drive may be copied and shared for personal, non-commercial use.
   Zmanim are astronomical calculations — customs vary; consult your Rav for practice.</p>
+  <p>Build 2026-07-19 · <a href="SOURCES-AND-DATES.html">Sources &amp; data dates ›</a> ·
+  <a href="QUICK-START-CARD.html">Print a quick-start card ›</a></p>
 </footer>
+<script>
+(function () {
+  var KEY = "cr-seen-update-2026-07-19";
+  var banner = document.getElementById("update-banner");
+  if (!banner) return;
+  var seen = false;
+  try { seen = !!localStorage.getItem(KEY); } catch (e) {}
+  if (seen) { banner.style.display = "none"; return; }
+  var closeBtn = document.getElementById("ub-close");
+  if (closeBtn) closeBtn.addEventListener("click", function () {
+    try { localStorage.setItem(KEY, "1"); } catch (e) {}
+    banner.style.display = "none";
+  });
+})();
+</script>
 </body>
 </html>

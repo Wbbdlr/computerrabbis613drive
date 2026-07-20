@@ -15,9 +15,12 @@ valuable thing you can do is try to break that promise.
 
 ### 1. START-HERE page
 - [ ] Double-clicking `START-HERE.html` opens it in the default browser.
-- [ ] The Computer Rabbis logo and wordmark show correctly.
+- [ ] The Computer Rabbis logo and wordmark show correctly, and blends into the navy header (no
+      visible white/mismatched box around it).
+- [ ] The browser tab shows the Computer Rabbis icon (favicon), not a blank page icon.
 - [ ] All three sections are present: **Library**, **Zmanim & Luach**, **Dictionaries**.
 - [ ] Every "Open the…" button leads to the right page.
+- [ ] Footer's **"Print a quick-start card"** link opens a clean, one-page printable card.
 
 ### 2. Library — browser reader
 - [ ] Opens from START-HERE with no program to install.
@@ -26,12 +29,25 @@ valuable thing you can do is try to break that promise.
 - [ ] Open a Chumash (e.g. Bereishis) — Hebrew renders right‑to‑left and readable.
 - [ ] For a sefer **with English** (e.g. Berakhos, Bereishis) the עברית / Both / English toggle works.
 - [ ] Title search finds a sefer by name (try a few in Hebrew).
+- [ ] Typing a sefer name **plus a chapter/daf** (e.g. "ברכות ב" or "בראשית ג") jumps straight to
+      that spot instead of just opening the sefer at the top.
+- [ ] The **Home** screen shows a "Today's Learning" section with Daf Yomi, Rambam Yomi, and Mishna
+      Yomi shortcuts; clicking each opens the right sefer at the right perek/daf.
+- [ ] The **search-inside-the-text icon** (book with a magnifying glass, in the header) opens a panel;
+      searching a word or a few words returns results **grouped by sefer** with snippets, and clicking
+      a result jumps straight to that paragraph. *(The very first search of a session can take a few
+      seconds — it's loading the search index, a one-time cost. After that it should feel instant.)*
+- [ ] **Dark** and **Night** themes — open a sefer and check chapter headings are clearly legible
+      (not dark text on a dark background).
 - [ ] "Find in this sefer" highlights matches inside an open book.
 - [ ] **Contents / תוכן** button jumps to sections.
+- [ ] Open a **second research tab** (+ button) and turn on **split view** — two seforim side by side.
 - [ ] **Settings** (top right): change background (Light / Sepia / Dark), font, size, and nikud on/off —
       each visibly changes the text.
 - [ ] Highlight a passage, add a note, then reopen the sefer — the highlight and note are still there.
 - [ ] Pin a sefer; it appears on the **Home** view. "Recently viewed" fills in as you read.
+- [ ] Open a sefer, scroll well into it, then go **Home** and reopen the same sefer (from Recently
+      viewed, a pin, or the sidebar) — it resumes near where you left off, not back at the top.
 - [ ] The sidebar collapses and reopens (button **and** the little arrow on its edge).
 - [ ] **Export your data** downloads a file; **Import** on another computer restores your notes,
       highlights, and pins. *(This is how a person's markings follow the drive between computers.)*
@@ -50,15 +66,20 @@ valuable thing you can do is try to break that promise.
 - [ ] Spot-check a couple of times against a luach you trust (sunrise/sunset, candle lighting).
 - [ ] Walk each tab: **Zmanim, Date Converter, Holidays, Yahrzeit, Daily Learning, Sefiras HaOmer,
       Molad, Shiurim, Gematria** — each produces sensible output.
+- [ ] On the Zmanim tab, the **Seconds** checkbox adds seconds to every displayed time (table, today
+      strip, Shabbos card, monthly luach).
+- [ ] The **More zmanim** checkbox expands the table with additional shitos (Baal HaTanya, Ateret
+      Torah, extra Alos/Tzeis degree & minute variants) without disturbing the default set.
 - [ ] Try a **future year** and a **past year** — dates and holidays still compute.
 - [ ] **Print** a zmanim/luach page — it lays out cleanly.
 - [ ] **Export .ics** and open it in a calendar app — events look right.
 
-### 5. Otzaria app (optional full-text search)
+### 5. Otzaria app (optional native app)
 - [ ] `Otzaria-Windows/otzaria.exe` launches (note if antivirus/SmartScreen interferes — **record the
       exact message**).
 - [ ] If it asks for the library folder, point it at the `Library` folder on the drive.
-- [ ] A full-text search across all seforim returns results.
+- [ ] A full-text search across all seforim returns results. *(The browser reader now has this too —
+      see section 2 — so this is a cross-check, not the only way to search.)*
 
 ## How to report
 

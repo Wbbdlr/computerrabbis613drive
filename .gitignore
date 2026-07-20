@@ -17,6 +17,15 @@ usb-root/Library-Web/tree-bilingual.js
 usb-root/Library-Web/dictionaries/
 usb-root/Library-Web/jastrow/
 
+# Generated full-text search index (produced by search_build.py)
+usb-root/Library-Web/search/
+usb-root/Library-Web/search_build/
+build/search_build.checkpoint.pkl*
+
+# Node build tool for the Hebcal bundle (produces usb-root/Zmanim/hebcal.bundle.min.js)
+build/hebcal-bundle/node_modules/
+build/hebcal-bundle/package-lock.json
+
 # Python cache
 __pycache__/
 

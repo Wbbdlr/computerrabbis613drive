@@ -6,10 +6,13 @@ on any Windows or Mac computer.
 
 It contains:
 
-- **📚 A seforim library** — ~6,000 seforim (Tanach, Shas, Rambam, Shulchan Aruch, Mishnah Berurah,
+- **📚 A seforim library** — ~7,000 seforim (Tanach, Shas, Rambam, Shulchan Aruch, Mishnah Berurah,
   midrash, mussar, chassidus, shu"t and more), readable two ways:
-  - a **no-install browser reader** (`Library-Web/`) — opens like a web page, no program to run;
-  - the optional **Otzaria** app (`Otzaria-Windows/`) for instant full-text search across everything.
+  - a **no-install browser reader** (`Library-Web/`) — opens like a web page, no program to run.
+    Includes full-text search across the entire library, type-a-reference jump-to (e.g. a masechta +
+    daf, or a perek), a "Today's Learning" Daf Yomi shortcut, multi-tab research with split view,
+    highlighting, and an embedded dictionary lookup on any selected word;
+  - the optional **Otzaria** app (`Otzaria-Windows/`) for the same library as a native desktop app.
 - **🕰️ A Jewish Calendar & Zmanim Toolkit** (`Zmanim/`) — zmanim for any location, Hebrew↔civil date
   conversion, holidays for any year, a yahrzeit calculator, printable luchos, and **.ics calendar
   export** — powered by `@hebcal/core` and `KosherZmanim`, entirely offline and valid in perpetuity.
@@ -28,10 +31,10 @@ so the repo stays small and the platform stays fully reproducible.
 |------|:------:|------------|
 | `usb-root/START-HERE.html`, `SOURCES-AND-DATES.html` | ✅ | Landing + provenance pages |
 | `usb-root/Zmanim/` | ✅ | Calendar/zmanim toolkit + engines + city list |
-| `usb-root/Library-Web/` (`index.html`, `reader.js`, `fonts/`) | ✅ | Browser reader UI |
+| `usb-root/Library-Web/` (`index.html`, `reader.js`, `search-embed.js`, `dict-embed.js`, `fonts/`) | ✅ | Browser reader UI |
 | `usb-root/licenses/` | ✅ | Third-party license texts |
 | `build/`, `sources.json` | ✅ | Build scripts + machine-readable provenance |
-| `usb-root/Library/`, `usb-root/Library-Web/books/`, `usb-root/Otzaria-Windows/` | ❌ (gitignored) | The big data — fetched/built |
+| `usb-root/Library/`, `usb-root/Library-Web/books/`, `usb-root/Library-Web/search/`, `usb-root/Otzaria-Windows/` | ❌ (gitignored) | The big data — fetched/built |
 
 ## Building a complete drive
 
@@ -42,6 +45,22 @@ powershell -ExecutionPolicy Bypass -File build\fetch_sources.ps1
 ```
 
 This downloads the Otzaria app + library and builds the browser-reader data into `usb-root\`.
+Two more one-time build steps produce data that's also gitignored (regenerate after adding/changing books):
+
+```powershell
+python build\lexicon_build.py   # dictionaries (Jastrow/BDB/Klein) -> Library-Web/dictionaries/
+python build\search_build.py    # full-text search index -> Library-Web/search/ (run last; can take ~an hour)
+```
+
+A third step, only needed when picking up a newer `@hebcal/core`/`@hebcal/learning` release, rebuilds the
+Hebcal bundle (requires Node.js — this is the only build step that does):
+
+```powershell
+cd build\hebcal-bundle
+npm install
+npm run build   # -> Zmanim/hebcal.bundle.min.js (Daf/Rambam/Mishna Yomi, holidays, molad, etc.)
+```
+
 Then copy the **contents of `usb-root\`** to the root of a USB drive (exFAT; **32 GB recommended**).
 
 ## Distributing to end users
@@ -65,7 +84,7 @@ periodically to refresh the texts.
 ## Licenses
 
 Platform code by ComputerRabbis. Third-party components retain their own licenses (Otzaria: Unlicense;
-KosherZmanim: LGPL-2.1; @hebcal/core: GPL-2.0; texts: public-domain / CC-BY / CC-BY-SA / CC-BY-NC per
+KosherZmanim: LGPL-3.0; @hebcal/core: GPL-2.0; @hebcal/learning: BSD-2-Clause; texts: public-domain / CC-BY / CC-BY-SA / CC-BY-NC per
 work). Full texts in `usb-root/licenses/`.
 
 *Independent project — not affiliated with or endorsed by Sefaria, Dicta, Hebcal, or the Otzaria project.*

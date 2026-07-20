@@ -4,31 +4,38 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dictionaries — Computer Rabbis Offline Library</title>
+<link rel="icon" type="image/png" href="../brand/computer-rabbis-icon.png">
 <style>
   @font-face { font-family:"FrankRuehl"; src:url("fonts/FrankRuehlCLM-Medium.ttf"); font-display:swap; }
-  :root { --navy:#1b2a4a; --gold:#c9a227; --cream:#faf7f0; --ink:#22252b; --muted:#6b7280; --line:#e5e0d4; --sidebar:#f3efe4; }
+  :root { --navy:#232936; --gold:#ee9f7e; --coral:#ee9f7e; --cream:#faf7f0; --ink:#22252b; --muted:#6b7280; --line:#e5e0d4; --sidebar:#f3efe4; --bg:#faf7f0; --card:#fff; --toolbar:#f0ebe0; --hover:#e5e0d4; --itemline:#ece6d6; --itemhover:#eae4d3; }
+  body[data-theme="sepia"] { --bg:#f4ecd8; --sidebar:#efe6cf; --card:#faf3e2; --toolbar:#ece0c4; --line:#ddd0b0; --hover:#e0d4b4; --itemline:#e0d4b4; --itemhover:#e0d4b4; }
+  body[data-theme="dark"] { --bg:#1c2028; --sidebar:#232936; --card:#262c37; --toolbar:#232936; --ink:#e6e6e6; --muted:#9aa3b2; --line:#3a414f; --hover:#2f3747; --itemline:#3a414f; --itemhover:#2f3747; }
+  body[data-theme="night"] { --bg:#0d1013; --sidebar:#14181e; --card:#161b22; --toolbar:#14181e; --ink:#c9d1d9; --muted:#8b949e; --line:#2a2f37; --hover:#1b2027; --itemline:#2a2f37; --itemhover:#1b2027; }
   * { box-sizing:border-box; }
   html,body { height:100%; margin:0; }
-  body { display:flex; flex-direction:column; background:var(--cream); color:var(--ink); font-family:Georgia,"Times New Roman",serif; }
+  body { display:flex; flex-direction:column; background:var(--bg); color:var(--ink); font-family:Georgia,"Times New Roman",serif; }
   header { background:var(--navy); color:#fff; padding:10px 16px; border-bottom:4px solid var(--gold); display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
   header a.brand { color:var(--gold); text-transform:uppercase; letter-spacing:.12em; font-size:.85rem; text-decoration:none; }
   header h1 { font-size:1.1rem; font-weight:normal; margin:0; }
   header .right { margin-inline-start:auto; display:flex; gap:14px; align-items:center; font-size:.85rem; }
   header a.home { color:#cdd6ea; text-decoration:none; border:1px solid #3a4d78; border-radius:6px; padding:4px 10px; }
   header a.home:hover { background:#24365e; }
-  .toolbar { background:#f0ebe0; border-bottom:1px solid var(--line); padding:8px 16px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .theme-pick { display:flex; gap:4px; }
+  .theme-pick button { border:1px solid #3a4d78; background:#24365e; color:#cdd6ea; border-radius:6px; padding:4px 8px; font-size:.78rem; cursor:pointer; font:inherit; }
+  .theme-pick button.active { background:var(--coral); color:var(--navy); border-color:var(--coral); font-weight:bold; }
+  .toolbar { background:var(--toolbar); border-bottom:1px solid var(--line); padding:8px 16px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
   .toolbar label { font-size:.85rem; color:var(--muted); }
   .dict-btn { background:none; border:1px solid var(--line); border-radius:6px; padding:5px 12px; font:inherit; font-size:.85rem; cursor:pointer; color:var(--ink); }
   .dict-btn.active { background:var(--navy); color:#fff; border-color:var(--navy); }
-  .dict-btn:hover:not(.active) { background:#e5e0d4; }
+  .dict-btn:hover:not(.active) { background:var(--hover); }
   .dict-count { font-size:.78rem; color:var(--muted); margin-inline-start:auto; }
   .layout { flex:1; display:flex; min-height:0; }
   .side { width:320px; background:var(--sidebar); border-inline-end:1px solid var(--line); display:flex; flex-direction:column; }
   .searchbox { padding:12px; border-bottom:1px solid var(--line); }
-  .searchbox input { width:100%; padding:10px 12px; border:1px solid #c9c3b4; border-radius:8px; font:inherit; font-size:1.3rem; direction:rtl; }
+  .searchbox input { width:100%; padding:10px 12px; border:1px solid #c9c3b4; border-radius:8px; font:inherit; font-size:1.3rem; direction:rtl; background:var(--card); color:var(--ink); }
   #lex-res { flex:1; overflow:auto; }
-  .lex-item { padding:7px 14px; cursor:pointer; direction:rtl; font-family:"FrankRuehl",serif; font-size:1.15rem; border-bottom:1px solid #ece6d6; display:flex; justify-content:space-between; align-items:baseline; }
-  .lex-item:hover { background:#eae4d3; }
+  .lex-item { padding:7px 14px; cursor:pointer; direction:rtl; font-family:"FrankRuehl",serif; font-size:1.15rem; border-bottom:1px solid var(--itemline); display:flex; justify-content:space-between; align-items:baseline; }
+  .lex-item:hover { background:var(--itemhover); }
   .lex-item.active { background:var(--gold); color:var(--navy); }
   .lex-item .src { font-size:.7rem; direction:ltr; color:var(--muted); font-family:Georgia,serif; }
   .lex-item.active .src { color:var(--navy); opacity:.7; }
@@ -45,6 +52,11 @@
   .welcome .dict-list dt { font-weight:bold; color:var(--navy); margin-top:10px; }
   .welcome .dict-list dd { margin:2px 0 0 20px; }
   @media (max-width:760px){ .side { width:46vw; } .lex-hw { font-size:1.5rem; } }
+  /* dark/night contrast: navy text and the blue link color are unreadable against dark backgrounds */
+  body[data-theme="dark"] .lex-hw, body[data-theme="dark"] .welcome h2, body[data-theme="dark"] .welcome .dict-list dt,
+  body[data-theme="night"] .lex-hw, body[data-theme="night"] .welcome h2, body[data-theme="night"] .welcome .dict-list dt
+  { color:var(--coral); }
+  body[data-theme="dark"] .lex-def a, body[data-theme="night"] .lex-def a { color:#8ab4f8; }
 </style>
 </head>
 <body>
@@ -53,7 +65,14 @@
   <h1>Dictionaries</h1>
   <div class="right">
     <a class="home" href="index.html">Library</a>
+    <a class="home" href="../Zmanim/index.html">Zmanim</a>
     <a class="home" href="../START-HERE.html">Home</a>
+    <div class="theme-pick" id="theme-pick">
+      <button data-t="light" title="Light">Light</button>
+      <button data-t="sepia" title="Sepia">Sepia</button>
+      <button data-t="dark" title="Dark">Dark</button>
+      <button data-t="night" title="Night">Night</button>
+    </div>
   </div>
 </header>
 <div class="toolbar" id="dict-bar"></div>
@@ -75,5 +94,27 @@
 </div>
 <script src="dictionaries.js"></script>
 <script src="dictionaries/index.js"></script>
+<script>
+(function () {
+  var KEY = "cr-dict-theme";
+  var t = "light";
+  try { t = localStorage.getItem(KEY) || "light"; } catch (e) {}
+  document.body.setAttribute("data-theme", t);
+  function sync() {
+    document.querySelectorAll("#theme-pick button").forEach(function (b) {
+      b.classList.toggle("active", b.getAttribute("data-t") === t);
+    });
+  }
+  document.querySelectorAll("#theme-pick button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      t = b.getAttribute("data-t");
+      document.body.setAttribute("data-theme", t);
+      try { localStorage.setItem(KEY, t); } catch (e) {}
+      sync();
+    });
+  });
+  sync();
+})();
+</script>
 </body>
 </html>

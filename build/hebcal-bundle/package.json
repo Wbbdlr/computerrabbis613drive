@@ -1,0 +1,15 @@
+{
+  "name": "hebcal-bundle-build",
+  "private": true,
+  "description": "Rebuilds usb-root/Zmanim/hebcal.bundle.min.js from the latest @hebcal/core + @hebcal/learning. Not part of the shipped product -- a build-time-only tool.",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "dependencies": {
+    "@hebcal/core": "latest",
+    "@hebcal/learning": "latest"
+  },
+  "devDependencies": {
+    "esbuild": "latest"
+  }
+}

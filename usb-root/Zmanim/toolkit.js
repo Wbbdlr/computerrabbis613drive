@@ -1,6 +1,6 @@
 // ComputerRabbis Offline Jewish Calendar & Zmanim Toolkit
 // Calendar/date/holiday/yahrzeit features are powered by @hebcal/core (GPLv2).
-// Precise zmanim are powered by KosherZmanim (LGPL-2.1).
+// Precise zmanim are powered by KosherZmanim (LGPL-3.0).
 // 100% offline: both engines are plain <script> includes; no network is used.
 (function () {
   "use strict";
@@ -26,12 +26,14 @@
   tabs.forEach(function (t) { $("tab-" + t).addEventListener("click", function () { showTab(t); }); });
 
   // ---------------- shared state (zmanim) ----------------
-  var state = { cityIdx: 0, date: new Date(), candles: 18, useElev: false, custom: null };
+  var state = { cityIdx: 0, date: new Date(), candles: 18, useElev: false, custom: null, showSeconds: false, showExtraZmanim: false, showSource: false, imperial: false };
   try {
     var saved = JSON.parse(localStorage.getItem("cr-luach") || "{}");
     if (typeof saved.cityIdx === "number") state.cityIdx = saved.cityIdx;
     if (saved.candles) state.candles = saved.candles;
     state.useElev = !!saved.useElev; if (saved.custom) state.custom = saved.custom;
+    state.showSeconds = !!saved.showSeconds; state.showExtraZmanim = !!saved.showExtraZmanim;
+    state.showSource = !!saved.showSource; state.imperial = !!saved.imperial;
   } catch (e) {}
   function persist() { try { localStorage.setItem("cr-luach", JSON.stringify(state)); } catch (e) {} }
   function loc() { return state.custom || window.CITIES[state.cityIdx] || window.CITIES[0]; }
@@ -47,7 +49,14 @@
     var off = tzOffsetMin(tz, guess); off = tzOffsetMin(tz, guess - off * 60000);
     return Date.UTC(y, m - 1, d, 12, 0, 0) - off * 60000;
   }
-  function fmtTime(dt, tz) { if (!dt) return "—"; try { return new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "numeric", minute: "2-digit" }).format(dt); } catch (e) { return "—"; } }
+  function fmtTime(dt, tz) {
+    if (!dt) return "—";
+    try {
+      var opts = { timeZone: tz, hour: "numeric", minute: "2-digit" };
+      if (state.showSeconds) opts.second = "2-digit";
+      return new Intl.DateTimeFormat("en-US", opts).format(dt);
+    } catch (e) { return "—"; }
+  }
   function ymd(d) { return { y: d.getFullYear(), m: d.getMonth() + 1, d: d.getDate() }; }
   function toJs(x) { if (!x) return null; if (x instanceof Date) return isNaN(x.getTime()) ? null : x; if (typeof x.toJSDate === "function") { var d = x.toJSDate(); return isNaN(d.getTime()) ? null : d; } return null; }
   function safeCall(o, m) { var a = [].slice.call(arguments, 2); try { if (o && typeof o[m] === "function") return o[m].apply(o, a); } catch (e) {} return null; }
@@ -65,11 +74,12 @@
   function z(czc, m) { try { if (typeof czc[m] === "function") return toJs(czc[m]()); } catch (e) {} return null; }
   function jcal(p) { var L = loc(); var jc = new KZ.JewishCalendar(new Date(noonInstant(L.tz, p.y, p.m, p.d))); try { jc.setInIsrael(L.tz === "Asia/Jerusalem"); } catch (e) {} return jc; }
 
-  var ZROWS = [
+  // Base set: shown by default, matches what most people look up day to day.
+  var ZROWS_BASIC = [
     { g: "Morning · בוקר" },
     { l: "Alos (72 min)", he: "עלות השחר עב' דק'", m: "getAlos72" },
     { l: "Alos (16.1°)", he: "עלות השחר 16.1°", m: "getAlos16Point1Degrees" },
-    { l: "Misheyakir (11.5°)", he: "משיכיר", m: "getMisheyakir11Point5Degrees" },
+    { l: "Misheyakir — earliest tallis & tefillin (11.5°)", he: "משיכיר — טלית ותפילין", m: "getMisheyakir11Point5Degrees" },
     { l: "Netz (sunrise)", he: "הנץ החמה", m: "getSunrise" },
     { l: "Sof Zman Shma — MG\"A", he: "סוזק\"ש מג\"א", m: "getSofZmanShmaMGA" },
     { l: "Sof Zman Shma — GR\"A", he: "סוזק\"ש גר\"א", m: "getSofZmanShmaGRA" },
@@ -85,6 +95,110 @@
     { l: "Tzeis (8.5°)", he: "צאת הכוכבים", m: "getTzaisGeonim8Point5Degrees" },
     { l: "Tzeis — Rabbeinu Tam (72)", he: "צאת ר\"ת", m: "getTzais72" }
   ];
+  // Extra shitos, only shown when "Show more zmanim" is on -- otherwise this
+  // dashboard would bury the common case under ~180 rarely-needed variants.
+  var ZROWS_EXTRA = [
+    { g: "Morning · בוקר", extra: true },
+    { l: "Alos (18°)", he: "עלות השחר 18°", m: "getAlos18Degrees", extra: true },
+    { l: "Alos (19.8°)", he: "עלות השחר 19.8°", m: "getAlos19Point8Degrees", extra: true },
+    { l: "Alos (90 min)", he: "עלות השחר צ' דק'", m: "getAlos90", extra: true },
+    { l: "Alos (96 min)", he: "עלות השחר צו' דק'", m: "getAlos96", extra: true },
+    { l: "Alos (120 min)", he: "עלות השחר ק\"כ דק'", m: "getAlos120", extra: true },
+    { l: "Misheyakir (10.2°)", he: "משיכיר 10.2°", m: "getMisheyakir10Point2Degrees", extra: true },
+    { l: "Misheyakir (9.5°)", he: "משיכיר 9.5°", m: "getMisheyakir9Point5Degrees", extra: true },
+    { l: "Sof Zman Shma — Baal HaTanya", he: "סוזק\"ש בעל התניא", m: "getSofZmanShmaBaalHatanya", extra: true },
+    { l: "Sof Zman Tfila — Baal HaTanya", he: "סוז\"ת בעל התניא", m: "getSofZmanTfilaBaalHatanya", extra: true },
+    { l: "Sof Zman Shma — Ateret Torah", he: "סוזק\"ש עטרת תורה", m: "getSofZmanShmaAteretTorah", extra: true },
+    { l: "Sof Zman Achilas Chametz — GR\"A", he: "סוז\"א חמץ גר\"א", m: "getSofZmanAchilasChametzGRA", extra: true },
+    { l: "Sof Zman Biur Chametz — GR\"A", he: "סוז\"ב חמץ גר\"א", m: "getSofZmanBiurChametzGRA", extra: true },
+    { g: "Midday & afternoon · צהריים", extra: true },
+    { l: "Mincha Gedola (72 min)", he: "מנחה גדולה עב' דק'", m: "getMinchaGedola72Minutes", extra: true },
+    { l: "Mincha Gedola — Baal HaTanya", he: "מנחה גדולה בעל התניא", m: "getMinchaGedolaBaalHatanya", extra: true },
+    { l: "Mincha Ketana — Baal HaTanya", he: "מנחה קטנה בעל התניא", m: "getMinchaKetanaBaalHatanya", extra: true },
+    { l: "Plag HaMincha (72 min)", he: "פלג המנחה עב' דק'", m: "getPlagHamincha72Minutes", extra: true },
+    { l: "Plag HaMincha — Baal HaTanya", he: "פלג המנחה בעל התניא", m: "getPlagHaminchaBaalHatanya", extra: true },
+    { g: "Evening · ערב", extra: true },
+    { l: "Shkia — Baal HaTanya", he: "שקיעה בעל התניא", m: "getSunsetBaalHatanya", extra: true },
+    { l: "Bein Hashmashos — Rabbeinu Tam", he: "בין השמשות ר\"ת", m: "getBainHashmashosRT58Point5Minutes", extra: true },
+    { l: "Tzeis (18°)", he: "צאת הכוכבים 18°", m: "getTzais18Degrees", extra: true },
+    { l: "Tzeis (19.8°)", he: "צאת הכוכבים 19.8°", m: "getTzais19Point8Degrees", extra: true },
+    { l: "Tzeis (90 min)", he: "צאת הכוכבים צ' דק'", m: "getTzais90", extra: true },
+    { l: "Tzeis (96 min)", he: "צאת הכוכבים צו' דק'", m: "getTzais96", extra: true },
+    { l: "Tzeis (120 min)", he: "צאת הכוכבים ק\"כ דק'", m: "getTzais120", extra: true },
+    { l: "Tzeis — Baal HaTanya", he: "צאת הכוכבים בעל התניא", m: "getTzaisBaalHatanya", extra: true },
+    { l: "Tzeis — Ateret Torah", he: "צאת הכוכבים עטרת תורה", m: "getTzaisAteretTorah", extra: true }
+  ];
+  // Plain-language calculation basis for each KosherZmanim method used above, keyed by method
+  // name so the table (and Shabbos card) can show exactly how a given row was reached.
+  // These are orientation summaries, not psak -- see the "What do these mean?" legend below the table.
+  var METHOD_INFO = {
+    getAlos72: "72 fixed minutes before sunrise",
+    getAlos16Point1Degrees: "sun 16.1° below horizon before sunrise",
+    getAlos18Degrees: "sun 18° below horizon before sunrise",
+    getAlos19Point8Degrees: "sun 19.8° below horizon before sunrise",
+    getAlos90: "90 fixed minutes before sunrise",
+    getAlos96: "96 fixed minutes before sunrise",
+    getAlos120: "120 fixed minutes before sunrise",
+    getMisheyakir11Point5Degrees: "sun 11.5° below horizon before sunrise",
+    getMisheyakir10Point2Degrees: "sun 10.2° below horizon before sunrise",
+    getMisheyakir9Point5Degrees: "sun 9.5° below horizon before sunrise",
+    getSunrise: "observed sunrise at this location",
+    getSunset: "observed sunset at this location",
+    getSunsetBaalHatanya: "Baal HaTanya's own sunset reckoning",
+    getSofZmanShmaGRA: "GR\"A: 3 shaos zmaniyos, sunrise-to-sunset day",
+    getSofZmanShmaMGA: "Magen Avraham: 3 shaos zmaniyos, alos-to-tzeis day",
+    getSofZmanShmaBaalHatanya: "Baal HaTanya: 3 shaos zmaniyos, its own alos/tzeis",
+    getSofZmanShmaAteretTorah: "Ateret Torah: 3 shaos zmaniyos, its own alos/tzeis",
+    getSofZmanTfilaGRA: "GR\"A: 4 shaos zmaniyos, sunrise-to-sunset day",
+    getSofZmanTfilaMGA: "Magen Avraham: 4 shaos zmaniyos, alos-to-tzeis day",
+    getSofZmanTfilaBaalHatanya: "Baal HaTanya: 4 shaos zmaniyos, its own alos/tzeis",
+    getSofZmanAchilasChametzGRA: "GR\"A: 4 shaos zmaniyos, sunrise-to-sunset day",
+    getSofZmanBiurChametzGRA: "GR\"A: 5 shaos zmaniyos, sunrise-to-sunset day",
+    getChatzos: "midpoint of sunrise and sunset",
+    getMinchaGedola: "6.5 shaos zmaniyos from sunrise (GR\"A day)",
+    getMinchaGedola72Minutes: "6.5 shaos zmaniyos, alos 72/tzeis 72 day",
+    getMinchaGedolaBaalHatanya: "Baal HaTanya: 6.5 shaos zmaniyos, its own alos/tzeis",
+    getMinchaKetana: "9.5 shaos zmaniyos from sunrise (GR\"A day)",
+    getMinchaKetanaBaalHatanya: "Baal HaTanya: 9.5 shaos zmaniyos, its own alos/tzeis",
+    getPlagHamincha: "10.75 shaos zmaniyos from sunrise (GR\"A day)",
+    getPlagHamincha72Minutes: "10.75 shaos zmaniyos, alos 72/tzeis 72 day",
+    getPlagHaminchaBaalHatanya: "Baal HaTanya: 10.75 shaos zmaniyos, its own alos/tzeis",
+    getBainHashmashosRT58Point5Minutes: "Rabbeinu Tam: 58.5 fixed minutes after sunset",
+    getTzaisGeonim8Point5Degrees: "Geonim: sun 8.5° below horizon after sunset",
+    getTzais72: "Rabbeinu Tam: 72 fixed minutes after sunset",
+    getTzais18Degrees: "sun 18° below horizon after sunset",
+    getTzais19Point8Degrees: "sun 19.8° below horizon after sunset",
+    getTzais90: "90 fixed minutes after sunset",
+    getTzais96: "96 fixed minutes after sunset",
+    getTzais120: "120 fixed minutes after sunset",
+    getTzaisBaalHatanya: "Baal HaTanya's own nightfall reckoning",
+    getTzaisAteretTorah: "Ateret Torah's own nightfall reckoning",
+    getCandleLighting: "sunset minus the candle-lighting minutes set above"
+  };
+  function srcCell(m) {
+    var basis = METHOD_INFO[m];
+    return '<span class="muted" style="font-size:.78em">KosherZmanim</span> <code>' + m + '</code>' + (basis ? '<br><span class="muted" style="font-size:.82em">' + basis + '</span>' : '');
+  }
+  function srcNote(m) {
+    var basis = METHOD_INFO[m];
+    return ' <span class="muted" style="font-size:.78rem">(KosherZmanim &middot; <code>' + m + '</code>' + (basis ? ': ' + basis : '') + ')</span>';
+  }
+
+  function activeZrows() {
+    if (!state.showExtraZmanim) return ZROWS_BASIC;
+    // Merge extra rows into their matching group, in the order groups first appear.
+    var out = [], groups = {};
+    ZROWS_BASIC.forEach(function (r) {
+      if (r.g) { groups[r.g] = groups[r.g] || []; out.push(r); return; }
+    });
+    var lastGroup = null;
+    ZROWS_BASIC.forEach(function (r) { if (r.g) lastGroup = r.g; else groups[lastGroup].push(r); });
+    lastGroup = null;
+    ZROWS_EXTRA.forEach(function (r) { if (r.g) { lastGroup = r.g; } else { groups[lastGroup].push(r); } });
+    var merged = [];
+    Object.keys(groups).forEach(function (g) { merged.push({ g: g }); groups[g].forEach(function (r) { merged.push(r); }); });
+    return merged;
+  }
 
   function renderZmanim() {
     var L = loc(), tz = L.tz, p = ymd(state.date);
@@ -107,9 +221,13 @@
     $("todaystrip").innerHTML = strip;
 
     var html = "";
-    ZROWS.forEach(function (r) {
-      if (r.g) { html += '<tr class="group"><td colspan="3">' + r.g + "</td></tr>"; return; }
-      html += "<tr><td>" + r.l + '</td><td class="he">' + r.he + '</td><td class="time">' + fmtTime(z(czc, r.m), tz) + "</td></tr>";
+    var cols = state.showSource ? 4 : 3;
+    if (state.showSource) html += '<tr><th>Zman</th><th class="he">עברית</th><th>Time</th><th>Method (KosherZmanim)</th></tr>';
+    activeZrows().forEach(function (r) {
+      if (r.g) { html += '<tr class="group"><td colspan="' + cols + '">' + r.g + "</td></tr>"; return; }
+      html += "<tr><td>" + r.l + '</td><td class="he">' + r.he + '</td><td class="time">' + fmtTime(z(czc, r.m), tz) + "</td>";
+      if (state.showSource) html += '<td class="src">' + srcCell(r.m) + "</td>";
+      html += "</tr>";
     });
     $("ztable").innerHTML = html;
 
@@ -119,9 +237,9 @@
     var satCzc = makeCzc(ymd(sat));
     var friFmt = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(fri);
     var sh = "<h3>שבת קודש — Parshas " + (parsha || "") + "</h3>";
-    sh += '<div>Candle lighting (Fri ' + friFmt + ", " + state.candles + ' min): <span class="big">' + fmtTime(friCandle, tz) + "</span></div>";
-    sh += '<div style="margin-top:6px">Havdalah (8.5°): <b>' + fmtTime(z(satCzc, "getTzaisGeonim8Point5Degrees"), tz) + "</b></div>";
-    sh += '<div>Motzaei Shabbos — Rabbeinu Tam: <b>' + fmtTime(z(satCzc, "getTzais72"), tz) + "</b></div>";
+    sh += '<div>Candle lighting (Fri ' + friFmt + ", " + state.candles + ' min): <span class="big">' + fmtTime(friCandle, tz) + "</span>" + (state.showSource ? srcNote("getCandleLighting") : "") + "</div>";
+    sh += '<div style="margin-top:6px">Havdalah (8.5°): <b>' + fmtTime(z(satCzc, "getTzaisGeonim8Point5Degrees"), tz) + "</b>" + (state.showSource ? srcNote("getTzaisGeonim8Point5Degrees") : "") + "</div>";
+    sh += '<div>Motzaei Shabbos — Rabbeinu Tam: <b>' + fmtTime(z(satCzc, "getTzais72"), tz) + "</b>" + (state.showSource ? srcNote("getTzais72") : "") + "</div>";
     $("shabboscard").innerHTML = sh;
   }
 
@@ -262,6 +380,13 @@
     if (parsha) rows.push(["Parsha (this Shabbos)", parsha]);
     try { rows.push(["Daf Yomi — Bavli", hdf.formatDafYomiBavli(KZ.YomiCalculator.getDafYomiBavli(jc))]); } catch (e) {}
     try { rows.push(["Daf Yomi — Yerushalmi", hdf.formatDafYomiYerushalmi(KZ.YerushalmiYomiCalculator.getDafYomiYerushalmi(jc))]); } catch (e) {}
+    var hd2 = new HC.HDate(new Date(p.y, p.m - 1, p.d));
+    [["rambam3", "Rambam Yomi"], ["mishnaYomi", "Mishna Yomi"], ["nachYomi", "Nach Yomi"]].forEach(function (pair) {
+      try {
+        var ev = HC.DailyLearning && HC.DailyLearning.lookup(pair[0], hd2);
+        if (ev) rows.push([pair[1], ev.render("he")]);
+      } catch (e) {}
+    });
     var omer = safeCall(jc, "getDayOfOmer"); if (omer && omer > 0) rows.push(["Sefiras HaOmer", "Day " + omer]);
     var html = "<table class='zmanim'>";
     rows.forEach(function (r) { html += "<tr><td>" + r[0] + "</td><td class='time' style='direction:rtl'>" + r[1] + "</td></tr>"; });
@@ -328,34 +453,65 @@
   }
 
   // ================= SHIURIM TAB =================
-  // [label, hebrew, unit-type, Rav Chaim Naeh value, Chazon Ish value]
+  // metric base values; unit is the metric unit each naeh/ci value is expressed in
   var SHIURIM = [
-    ["Length · אורך"],
-    ["Etzba (fingerbreadth)", "אצבע", "2.0 cm", "2.4 cm"],
-    ["Tefach (handbreadth)", "טפח", "8.0 cm", "9.6 cm"],
-    ["Zeret (span)", "זרת", "24 cm", "28.8 cm"],
-    ["Amah (cubit)", "אמה", "48 cm", "57.6 cm"],
-    ["Distance · מרחק"],
-    ["Mil", "מיל", "960 m (~0.6 mi)", "1152 m (~0.72 mi)"],
-    ["Techum Shabbos (2000 amos)", "תחום שבת", "960 m", "1152 m"],
-    ["Volume · נפח"],
-    ["Revi'is", "רביעית", "86 ml (2.9 oz)", "150 ml (5.1 oz)"],
-    ["Kezayis (≈½ kebeitzah)", "כזית", "~28 ml", "~50 ml"],
-    ["Kebeitzah (egg)", "כביצה", "~57 ml", "~100 ml"],
-    ["Weight (approx. use) · משקל"],
-    ["Kezayis matzah/maror (approx.)", "כזית", "~17–28 g", "~28–50 g"],
-    ["Challah shiur (flour, with bracha)", "שיעור חלה", "~1.2 kg", "~1.67 kg"]
+    { group: "Length · אורך" },
+    { label: "Etzba (fingerbreadth)", he: "אצבע", unit: "cm", naeh: 2.0, ci: 2.4 },
+    { label: "Tefach (handbreadth)", he: "טפח", unit: "cm", naeh: 8.0, ci: 9.6 },
+    { label: "Zeret (span)", he: "זרת", unit: "cm", naeh: 24, ci: 28.8 },
+    { label: "Amah (cubit)", he: "אמה", unit: "cm", naeh: 48, ci: 57.6 },
+    { group: "Distance · מרחק" },
+    { label: "Mil", he: "מיל", unit: "m", naeh: 960, ci: 1152 },
+    { label: "Techum Shabbos (2000 amos)", he: "תחום שבת", unit: "m", naeh: 960, ci: 1152 },
+    { group: "Volume · נפח" },
+    { label: "Revi'is", he: "רביעית", unit: "ml", naeh: 86, ci: 150 },
+    { label: "Kezayis (≈½ kebeitzah)", he: "כזית", unit: "ml", naeh: 28, ci: 50, approx: true },
+    { label: "Kebeitzah (egg)", he: "כביצה", unit: "ml", naeh: 57, ci: 100, approx: true },
+    { group: "Weight (approx. use) · משקל" },
+    { label: "Kezayis matzah/maror (approx.)", he: "כזית", unit: "g", naehLo: 17, naehHi: 28, ciLo: 28, ciHi: 50 },
+    { label: "Challah shiur (flour, with bracha)", he: "שיעור חלה", unit: "kg", naeh: 1.2, ci: 1.67, approx: true }
   ];
   var UNIT_VALUES = {
     "revi'is": { naeh: 86, ci: 150, u: "ml" }, "kezayis": { naeh: 28, ci: 50, u: "ml" },
     "kebeitzah": { naeh: 57, ci: 100, u: "ml" }, "tefach": { naeh: 8.0, ci: 9.6, u: "cm" },
     "amah": { naeh: 48, ci: 57.6, u: "cm" }, "mil": { naeh: 960, ci: 1152, u: "m" }
   };
+  // convert a metric value to its imperial counterpart
+  function toImperial(val, unit) {
+    switch (unit) {
+      case "cm": return { v: val / 2.54, u: "in" };
+      case "m": return { v: val / 1609.34, u: "mi" };
+      case "ml": return { v: val / 29.5735, u: "fl oz" };
+      case "g": return { v: val / 28.3495, u: "oz" };
+      case "kg": return { v: val * 2.20462, u: "lb" };
+      default: return { v: val, u: unit };
+    }
+  }
+  function roundNice(x) {
+    var d = x < 10 ? 2 : 1;
+    return Math.round(x * Math.pow(10, d)) / Math.pow(10, d);
+  }
+  // format one metric quantity, primary unit first per state.imperial, the other in parens
+  function fmtShiur(val, unit, approx) {
+    var pre = approx ? "~" : "";
+    var metricStr = pre + roundNice(val) + " " + unit;
+    var imp = toImperial(val, unit), impStr = pre + roundNice(imp.v) + " " + imp.u;
+    return state.imperial ? impStr + " (" + metricStr + ")" : metricStr + " (" + impStr + ")";
+  }
+  function fmtShiurRange(lo, hi, unit) {
+    var pre = "~";
+    var metricStr = pre + roundNice(lo) + "–" + roundNice(hi) + " " + unit;
+    var impLo = toImperial(lo, unit), impHi = toImperial(hi, unit);
+    var impStr = pre + roundNice(impLo.v) + "–" + roundNice(impHi.v) + " " + impLo.u;
+    return state.imperial ? impStr + " (" + metricStr + ")" : metricStr + " (" + impStr + ")";
+  }
   function renderShiurim() {
     var html = "<table class='zmanim'><tr class='group'><td>Measure</td><td class='he'>עברית</td><td>Rav Chaim Naeh</td><td>Chazon Ish</td></tr>";
     SHIURIM.forEach(function (r) {
-      if (r.length === 1) { html += "<tr class='group'><td colspan='4'>" + r[0] + "</td></tr>"; return; }
-      html += "<tr><td>" + r[0] + "</td><td class='he'>" + r[1] + "</td><td class='time'>" + r[2] + "</td><td class='time'>" + r[3] + "</td></tr>";
+      if (r.group) { html += "<tr class='group'><td colspan='4'>" + r.group + "</td></tr>"; return; }
+      var naehStr = (r.naehLo != null) ? fmtShiurRange(r.naehLo, r.naehHi, r.unit) : fmtShiur(r.naeh, r.unit, r.approx);
+      var ciStr = (r.ciLo != null) ? fmtShiurRange(r.ciLo, r.ciHi, r.unit) : fmtShiur(r.ci, r.unit, r.approx);
+      html += "<tr><td>" + r.label + "</td><td class='he'>" + r.he + "</td><td class='time'>" + naehStr + "</td><td class='time'>" + ciStr + "</td></tr>";
     });
     html += "</table>";
     $("shiur-out").innerHTML = html;
@@ -364,7 +520,10 @@
     var q = parseFloat($("sh-qty").value) || 0, unit = $("sh-unit").value, v = UNIT_VALUES[unit];
     if (!v) return;
     var n = (q * v.naeh), c = (q * v.ci);
-    var fmt = function (x) { return (Math.round(x * 10) / 10) + " " + v.u; };
+    var fmt = function (x) {
+      if (state.imperial) { var imp = toImperial(x, v.u); return roundNice(imp.v) + " " + imp.u; }
+      return roundNice(x) + " " + v.u;
+    };
     $("sh-result").innerHTML = "<b>" + q + " " + unit + "</b> ≈ <b>" + fmt(n) + "</b> (Rav Chaim Naeh) &nbsp;·&nbsp; <b>" + fmt(c) + "</b> (Chazon Ish)";
   }
 
@@ -411,13 +570,33 @@
     var end = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
     return ["BEGIN:VEVENT", "UID:" + uid(), "DTSTAMP:" + icsUTC(new Date()), "DTSTART;VALUE=DATE:" + icsDay(d), "DTEND;VALUE=DATE:" + icsDay(end), "SUMMARY:" + icsEsc(summary)].concat(desc ? ["DESCRIPTION:" + icsEsc(desc)] : []).concat(["END:VEVENT"]).join("\r\n");
   }
-  function downloadICS(filename, vevents, calName) {
+  // Opens a real "Save As" dialog on browsers that support the File System Access API
+  // (Chrome/Edge), so the .ics file can be saved straight back onto this drive. Falls back
+  // to a normal silent download (Firefox/Safari, or any file:// context that lacks the API).
+  async function saveBlob(blob, suggestedName, description, mimeType, extensions) {
+    if (window.showSaveFilePicker) {
+      try {
+        var accept = {}; accept[mimeType] = extensions;
+        var handle = await window.showSaveFilePicker({ suggestedName: suggestedName, types: [{ description: description, accept: accept }] });
+        var writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        return true;
+      } catch (e) {
+        if (e && e.name === "AbortError") return false; // user cancelled the save dialog — don't also silently download
+        // otherwise fall through to the legacy download below
+      }
+    }
+    var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = suggestedName;
+    document.body.appendChild(a); a.click(); setTimeout(function () { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 100);
+    return true;
+  }
+  async function downloadICS(filename, vevents, calName) {
     if (!vevents.length) { alert("Nothing to export for that selection."); return; }
     var head = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//ComputerRabbis//Offline Torah Drive//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:" + icsEsc(calName || "Jewish Calendar")];
     var ics = head.concat(vevents, ["END:VCALENDAR"]).join("\r\n");
     var blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
-    var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename;
-    document.body.appendChild(a); a.click(); setTimeout(function () { document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 100);
+    await saveBlob(blob, filename, "Calendar file", "text/calendar", [".ics"]);
   }
   function slug(s) { return s.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, ""); }
 
@@ -470,6 +649,9 @@
   $("citycount").textContent = window.CITIES.length;
   fillCities(""); setDateInput();
   $("candlemin").value = state.candles; $("useelev").checked = state.useElev;
+  $("showseconds").checked = state.showSeconds; $("showextra").checked = state.showExtraZmanim;
+  $("showsource").checked = state.showSource;
+  $("sh-imperial").checked = state.imperial;
 
   // zmanim events
   $("cityfilter").addEventListener("input", function () { fillCities(this.value); });
@@ -480,6 +662,10 @@
   $("todaybtn").addEventListener("click", function () { state.date = new Date(); setDateInput(); renderZmanim(); });
   $("candlemin").addEventListener("change", function () { state.candles = Math.max(0, Math.min(60, +this.value || 18)); persist(); renderZmanim(); });
   $("useelev").addEventListener("change", function () { state.useElev = this.checked; persist(); renderZmanim(); });
+  $("showseconds").addEventListener("change", function () { state.showSeconds = this.checked; persist(); renderZmanim(); });
+  $("showextra").addEventListener("change", function () { state.showExtraZmanim = this.checked; persist(); renderZmanim(); });
+  $("showsource").addEventListener("change", function () { state.showSource = this.checked; persist(); renderZmanim(); });
+  $("sh-imperial").addEventListener("change", function () { state.imperial = this.checked; persist(); renderShiurim(); calcShiur(); });
   $("usecustom").addEventListener("click", function () {
     var lat = parseFloat($("clat").value), lon = parseFloat($("clon").value), tz = $("ctz").value.trim();
     if (isNaN(lat) || isNaN(lon) || !tz) { alert("Fill latitude, longitude, and an IANA timezone (e.g. America/New_York)."); return; }
