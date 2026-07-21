@@ -6,7 +6,7 @@
 <title>Jewish Calendar &amp; Zmanim Toolkit — Computer Rabbis</title>
 <link rel="icon" type="image/png" href="../brand/computer-rabbis-icon.png">
 <style>
-  :root { --navy:#232936; --navy2:#2f3747; --gold:#ee9f7e; --coral:#ee9f7e; --cream:#faf7f0; --ink:#22252b; --muted:#6b7280; --line:#e5e0d4; --card:#fff; --accent:#2f4f8f; --bg:#faf7f0; --tint:#f2efe6; }
+  :root { --navy:#232936; --navy2:#2f3747; --gold:#ee9f7e; --coral:#ee9f7e; --cream:#faf7f0; --ink:#22252b; --muted:#6b7280; --line:#e5e0d4; --card:#fff; --accent:#2f4f8f; --bg:#faf7f0; --tint:#f2efe6; --he-font:"FrankRuehl","NotoHe",serif; }
   body[data-theme="sepia"] { --bg:#f4ecd8; --card:#faf3e2; --tint:#efe6cf; --line:#ddd0b0; }
   body[data-theme="dark"] { --bg:#1c2028; --card:#262c37; --tint:#2f3747; --ink:#e6e6e6; --muted:#9aa3b2; --line:#3a414f; }
   body[data-theme="night"] { --bg:#0d1013; --card:#161b22; --tint:#1b2027; --ink:#c9d1d9; --muted:#8b949e; --line:#2a2f37; }
@@ -21,13 +21,19 @@
   .theme-pop { position:relative; }
   .theme-btn { border:1px solid #3a4353; background:var(--navy2); color:#eaeef6; border-radius:6px; padding:7px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
   .theme-btn:hover { background:#3a4353; }
-  .theme-menu { display:none; position:absolute; z-index:50; top:calc(100% + 8px); right:0; width:min(280px,80vw); background:var(--card); border:1px solid var(--line); border-radius:10px; box-shadow:0 8px 28px rgba(0,0,0,.22); padding:14px 18px; }
+  .theme-menu { display:none; position:absolute; z-index:50; top:calc(100% + 8px); right:0; width:min(360px,90vw); max-height:80vh; overflow:auto; background:var(--card); border:1px solid var(--line); border-radius:10px; box-shadow:0 8px 28px rgba(0,0,0,.22); padding:14px 18px; }
   .theme-menu.open { display:block; }
+  .sp-section { margin:10px 0; }
   .sp-label { font-size:.82rem; color:var(--muted); margin-bottom:5px; }
   .sp-row { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
   .sp-theme { flex:1; padding:8px; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--ink); cursor:pointer; font:inherit; font-size:.85rem; text-align:center; }
   .sp-theme:hover { border-color:var(--coral); }
   .sp-theme.active { background:var(--navy); color:#fff; border-color:var(--navy); }
+  .sp-color input[type=color] { width:38px; height:30px; border:1px solid var(--line); border-radius:6px; background:none; cursor:pointer; padding:0; }
+  .sp-swatches { display:flex; gap:6px; flex-wrap:wrap; }
+  .sp-sw { width:22px; height:22px; border-radius:50%; cursor:pointer; border:2px solid var(--line); padding:0; }
+  .linkbtn { background:none; border:none; color:var(--navy2); text-decoration:underline; cursor:pointer; font:inherit; font-size:.8rem; padding:0; }
+  #theme-menu select { width:100%; }
   header .brand { font-size:1rem; letter-spacing:.12em; text-transform:uppercase; color:var(--gold); }
   header h1 { margin:2px 0 2px; font-size:1.5rem; font-weight:normal; }
   header .sub { color:#cdd6ea; font-size:.9rem; margin-bottom:12px; }
@@ -51,7 +57,7 @@
   .flag { display:inline-block; background:var(--gold); color:var(--navy); border-radius:6px; padding:1px 9px; margin-inline-start:6px; font-size:.9rem; }
   table.zmanim,table.ztable { width:100%; border-collapse:collapse; }
   table.zmanim th,table.zmanim td,table.ztable td { padding:7px 10px; border-bottom:1px solid var(--line); text-align:left; }
-  td.he,.he { direction:rtl; }
+  td.he,.he { direction:rtl; font-family:var(--he-font, inherit); }
   table.zmanim td.he { text-align:right; color:var(--muted); }
   table.zmanim td.time { font-variant-numeric:tabular-nums; font-weight:bold; color:var(--navy); white-space:nowrap; }
   table.zmanim td.src { font-size:.8rem; color:var(--muted); }
@@ -98,16 +104,63 @@
       <a href="../Library-Web/dictionaries.html" class="drive-home">Dictionaries</a>
       <a href="../START-HERE.html" class="drive-home">Drive Home</a>
       <div class="theme-pop" id="theme-pop">
-        <button class="theme-btn" id="theme-toggle" title="Display theme" aria-label="Display theme">
+        <button class="theme-btn" id="theme-toggle" title="Display, fonts &amp; colors" aria-label="Display settings">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h10"/><path d="M18 7h2"/><circle cx="16" cy="7" r="2"/><path d="M4 17h2"/><path d="M10 17h10"/><circle cx="8" cy="17" r="2"/></svg>
         </button>
         <div class="theme-menu" id="theme-menu">
-          <div class="sp-label">Background theme</div>
-          <div class="sp-row">
-            <button class="sp-theme" data-t="light">Light</button>
-            <button class="sp-theme" data-t="sepia">Sepia</button>
-            <button class="sp-theme" data-t="dark">Dark</button>
-            <button class="sp-theme" data-t="night">Night</button>
+          <div class="sp-section">
+            <div class="sp-label">Background theme</div>
+            <div class="sp-row">
+              <button class="sp-theme" data-t="light">Light</button>
+              <button class="sp-theme" data-t="sepia">Sepia</button>
+              <button class="sp-theme" data-t="dark">Dark</button>
+              <button class="sp-theme" data-t="night">Night</button>
+            </div>
+          </div>
+          <div class="sp-section">
+            <div class="sp-label">Text color</div>
+            <div class="sp-row sp-color">
+              <input type="color" id="sp-textcolor">
+              <div class="sp-swatches" id="sp-textswatches"></div>
+              <button class="linkbtn" id="sp-textreset">reset</button>
+            </div>
+          </div>
+          <div class="sp-section">
+            <div class="sp-label">Page color</div>
+            <div class="sp-row sp-color">
+              <input type="color" id="sp-bgcolor">
+              <div class="sp-swatches" id="sp-bgswatches"></div>
+              <button class="linkbtn" id="sp-bgreset">reset</button>
+            </div>
+          </div>
+          <div class="sp-section">
+            <div class="sp-label">Hebrew font</div>
+            <select id="sp-font">
+              <option value="frankruehl">Frank Ruehl (classic)</option>
+              <option value="noto">Noto Serif Hebrew</option>
+              <option value="david">David</option>
+              <option value="narkisim">Narkisim</option>
+              <option value="georgia">Georgia (serif)</option>
+              <option value="arial">Arial (sans-serif)</option>
+            </select>
+          </div>
+          <div class="sp-section">
+            <div class="sp-label">Text size</div>
+            <div class="sp-row">
+              <span style="font-size:.8rem">A</span>
+              <input type="range" id="sp-fontsize" min="14" max="20" step="1" style="flex:1">
+              <span style="font-size:1.2rem">A</span>
+              <span id="sp-fontsize-val" class="note" style="width:3em;text-align:center"></span>
+            </div>
+          </div>
+          <hr style="border:none;border-top:1px solid var(--line);margin:10px 0">
+          <div class="sp-section">
+            <div class="sp-label">Your preferences (location, display settings)</div>
+            <div class="sp-row" style="gap:8px">
+              <button class="ghost" id="sp-export" title="Save your Zmanim preferences to a file">Export to file</button>
+              <button class="ghost" id="sp-import" title="Load previously exported preferences">Import from file</button>
+              <input type="file" id="sp-import-file" accept=".json" style="display:none">
+            </div>
           </div>
         </div>
       </div>
@@ -390,33 +443,112 @@
 <script src="toolkit.js"></script>
 <script>
 (function () {
-  var KEY = "cr-zmanim-theme";
-  var t = "light";
-  try { t = localStorage.getItem(KEY) || "light"; } catch (e) {}
-  document.body.setAttribute("data-theme", t);
+  var KEY = "cr-zmanim-display";
+  var FONTS = {
+    frankruehl: '"FrankRuehl","NotoHe",serif', noto: '"NotoHe","FrankRuehl",serif',
+    david: '"David Libre","David","FrankRuehl","NotoHe",serif', narkisim: '"Narkisim","FrankRuehl","NotoHe",serif',
+    georgia: 'Georgia,"Times New Roman",serif', arial: 'Arial,Helvetica,sans-serif'
+  };
+  var TEXT_SWATCHES = ["#22252b", "#000000", "#433422", "#1b2a4a", "#e2e2e2"];
+  var BG_SWATCHES = ["#ffffff", "#faf7f0", "#f4ecd8", "#eaf3ea", "#1c2028"];
+  var d = { theme: "light", font: "frankruehl", fontSize: 16, textColor: null, bgColor: null };
+  try { Object.assign(d, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) {}
+  function persist() { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {} }
+
+  function applyTheme() { document.body.setAttribute("data-theme", d.theme); }
+  function applyFont() { document.documentElement.style.setProperty("--he-font", FONTS[d.font] || FONTS.frankruehl); }
+  function applyFontSize() { document.documentElement.style.fontSize = d.fontSize + "px"; }
+  function applyColors() {
+    if (d.textColor) document.body.style.setProperty("--ink", d.textColor); else document.body.style.removeProperty("--ink");
+    if (d.bgColor) document.body.style.setProperty("--bg", d.bgColor); else document.body.style.removeProperty("--bg");
+  }
+  function setTheme(t) { d.theme = t; d.textColor = null; d.bgColor = null; persist(); applyTheme(); applyColors(); syncUI(); }
+
   var menu = document.getElementById("theme-menu");
-  function sync() {
-    document.querySelectorAll("#theme-menu button").forEach(function (b) {
-      b.classList.toggle("active", b.getAttribute("data-t") === t);
+  function syncUI() {
+    document.querySelectorAll(".sp-theme").forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-t") === d.theme); });
+    document.getElementById("sp-font").value = d.font;
+    document.getElementById("sp-fontsize-val").textContent = d.fontSize + "px";
+    document.getElementById("sp-fontsize").value = d.fontSize;
+    document.getElementById("sp-textcolor").value = d.textColor || "#22252b";
+    document.getElementById("sp-bgcolor").value = d.bgColor || "#faf7f0";
+  }
+  function buildSwatches() {
+    var tw = document.getElementById("sp-textswatches"); tw.innerHTML = "";
+    TEXT_SWATCHES.forEach(function (c) {
+      var s = document.createElement("button"); s.className = "sp-sw"; s.style.background = c; s.title = c;
+      s.addEventListener("click", function () { d.textColor = c; persist(); applyColors(); syncUI(); });
+      tw.appendChild(s);
+    });
+    var bw = document.getElementById("sp-bgswatches"); bw.innerHTML = "";
+    BG_SWATCHES.forEach(function (c) {
+      var s = document.createElement("button"); s.className = "sp-sw"; s.style.background = c; s.title = c;
+      s.addEventListener("click", function () { d.bgColor = c; persist(); applyColors(); syncUI(); });
+      bw.appendChild(s);
     });
   }
+
+  applyTheme(); applyFont(); applyFontSize(); applyColors();
+  buildSwatches(); syncUI();
+
   document.getElementById("theme-toggle").addEventListener("click", function (e) {
     e.stopPropagation();
     menu.classList.toggle("open");
   });
-  document.querySelectorAll("#theme-menu button").forEach(function (b) {
-    b.addEventListener("click", function () {
-      t = b.getAttribute("data-t");
-      document.body.setAttribute("data-theme", t);
-      try { localStorage.setItem(KEY, t); } catch (e) {}
-      sync();
-      menu.classList.remove("open");
-    });
+  document.querySelectorAll(".sp-theme").forEach(function (b) {
+    b.addEventListener("click", function () { setTheme(b.getAttribute("data-t")); menu.classList.remove("open"); });
   });
+  document.getElementById("sp-font").addEventListener("change", function () { d.font = this.value; persist(); applyFont(); });
+  document.getElementById("sp-fontsize").addEventListener("input", function () { d.fontSize = +this.value; persist(); applyFontSize(); syncUI(); });
+  document.getElementById("sp-textcolor").addEventListener("input", function () { d.textColor = this.value; persist(); applyColors(); });
+  document.getElementById("sp-bgcolor").addEventListener("input", function () { d.bgColor = this.value; persist(); applyColors(); });
+  document.getElementById("sp-textreset").addEventListener("click", function () { d.textColor = null; persist(); applyColors(); syncUI(); });
+  document.getElementById("sp-bgreset").addEventListener("click", function () { d.bgColor = null; persist(); applyColors(); syncUI(); });
+
+  // export / import preferences (also picks up the Zmanim calculator's own "cr-luach" state)
+  async function saveBlob(blob, suggestedName, description, mimeType, extensions) {
+    if (window.showSaveFilePicker) {
+      try {
+        var accept = {}; accept[mimeType] = extensions;
+        var handle = await window.showSaveFilePicker({ suggestedName: suggestedName, types: [{ description: description, accept: accept }] });
+        var writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        return true;
+      } catch (e) { if (e && e.name === "AbortError") return false; }
+    }
+    var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = suggestedName;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 100);
+    return true;
+  }
+  document.getElementById("sp-export").addEventListener("click", async function () {
+    var data = { _cr_export: true, _date: new Date().toISOString() };
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf("cr-") === 0) data[k] = localStorage.getItem(k);
+    }
+    var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    await saveBlob(blob, "computer-rabbis-zmanim-prefs.json", "JSON data file", "application/json", [".json"]);
+  });
+  document.getElementById("sp-import").addEventListener("click", function () { document.getElementById("sp-import-file").click(); });
+  document.getElementById("sp-import-file").addEventListener("change", function () {
+    var file = this.files[0]; if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var data = JSON.parse(reader.result);
+        if (!data._cr_export) { alert("This does not appear to be a Computer Rabbis data file."); return; }
+        for (var k in data) if (k.indexOf("cr-") === 0) localStorage.setItem(k, data[k]);
+        location.reload();
+      } catch (e) { alert("Could not read this file: " + e.message); }
+    };
+    reader.readAsText(file);
+  });
+
   document.addEventListener("click", function (e) {
     if (!e.target.closest("#theme-pop")) menu.classList.remove("open");
   });
-  sync();
 })();
 </script>
 </body>

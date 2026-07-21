@@ -7,7 +7,7 @@
 <link rel="icon" type="image/png" href="../brand/computer-rabbis-icon.png">
 <style>
   @font-face { font-family:"FrankRuehl"; src:url("fonts/FrankRuehlCLM-Medium.ttf"); font-display:swap; }
-  :root { --navy:#232936; --gold:#ee9f7e; --coral:#ee9f7e; --cream:#faf7f0; --ink:#22252b; --muted:#6b7280; --line:#e5e0d4; --sidebar:#f3efe4; --bg:#faf7f0; --card:#fff; --toolbar:#f0ebe0; --hover:#e5e0d4; --itemline:#ece6d6; --itemhover:#eae4d3; }
+  :root { --navy:#232936; --gold:#ee9f7e; --coral:#ee9f7e; --cream:#faf7f0; --ink:#22252b; --muted:#6b7280; --line:#e5e0d4; --sidebar:#f3efe4; --bg:#faf7f0; --card:#fff; --toolbar:#f0ebe0; --hover:#e5e0d4; --itemline:#ece6d6; --itemhover:#eae4d3; --he-font:"FrankRuehl",serif; }
   body[data-theme="sepia"] { --bg:#f4ecd8; --sidebar:#efe6cf; --card:#faf3e2; --toolbar:#ece0c4; --line:#ddd0b0; --hover:#e0d4b4; --itemline:#e0d4b4; --itemhover:#e0d4b4; }
   body[data-theme="dark"] { --bg:#1c2028; --sidebar:#232936; --card:#262c37; --toolbar:#232936; --ink:#e6e6e6; --muted:#9aa3b2; --line:#3a414f; --hover:#2f3747; --itemline:#3a414f; --itemhover:#2f3747; }
   body[data-theme="night"] { --bg:#0d1013; --sidebar:#14181e; --card:#161b22; --toolbar:#14181e; --ink:#c9d1d9; --muted:#8b949e; --line:#2a2f37; --hover:#1b2027; --itemline:#2a2f37; --itemhover:#1b2027; }
@@ -23,13 +23,19 @@
   .theme-pop { position:relative; }
   .theme-btn { border:1px solid #3a4d78; background:#24365e; color:#eaeef6; border-radius:6px; padding:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
   .theme-btn:hover { background:#2f3f6e; }
-  .theme-menu { display:none; position:absolute; z-index:50; top:calc(100% + 8px); right:0; width:min(280px,80vw); background:var(--card); border:1px solid var(--line); border-radius:10px; box-shadow:0 8px 28px rgba(0,0,0,.22); padding:14px 18px; }
+  .theme-menu { display:none; position:absolute; z-index:50; top:calc(100% + 8px); right:0; width:min(360px,90vw); max-height:80vh; overflow:auto; background:var(--card); border:1px solid var(--line); border-radius:10px; box-shadow:0 8px 28px rgba(0,0,0,.22); padding:14px 18px; }
   .theme-menu.open { display:block; }
+  .sp-section { margin:10px 0; }
   .sp-label { font-size:.82rem; color:var(--muted); margin-bottom:5px; }
   .sp-row { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
   .sp-theme { flex:1; padding:8px; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--ink); cursor:pointer; font:inherit; font-size:.85rem; text-align:center; }
   .sp-theme:hover { border-color:var(--coral); }
   .sp-theme.active { background:var(--navy); color:#fff; border-color:var(--navy); }
+  .sp-color input[type=color] { width:38px; height:30px; border:1px solid var(--line); border-radius:6px; background:none; cursor:pointer; padding:0; }
+  .sp-swatches { display:flex; gap:6px; flex-wrap:wrap; }
+  .sp-sw { width:22px; height:22px; border-radius:50%; cursor:pointer; border:2px solid var(--line); padding:0; }
+  .linkbtn { background:none; border:none; color:var(--navy); text-decoration:underline; cursor:pointer; font:inherit; font-size:.8rem; padding:0; }
+  #theme-menu select { width:100%; }
   .toolbar { background:var(--toolbar); border-bottom:1px solid var(--line); padding:8px 16px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
   .toolbar label { font-size:.85rem; color:var(--muted); }
   .dict-btn { background:none; border:1px solid var(--line); border-radius:6px; padding:5px 12px; font:inherit; font-size:.85rem; cursor:pointer; color:var(--ink); }
@@ -41,17 +47,17 @@
   .searchbox { padding:12px; border-bottom:1px solid var(--line); }
   .searchbox input { width:100%; padding:10px 12px; border:1px solid #c9c3b4; border-radius:8px; font:inherit; font-size:1.3rem; direction:rtl; background:var(--card); color:var(--ink); }
   #lex-res { flex:1; overflow:auto; }
-  .lex-item { padding:7px 14px; cursor:pointer; direction:rtl; font-family:"FrankRuehl",serif; font-size:1.15rem; border-bottom:1px solid var(--itemline); display:flex; justify-content:space-between; align-items:baseline; }
+  .lex-item { padding:7px 14px; cursor:pointer; direction:rtl; font-family:var(--he-font); font-size:1.15rem; border-bottom:1px solid var(--itemline); display:flex; justify-content:space-between; align-items:baseline; }
   .lex-item:hover { background:var(--itemhover); }
   .lex-item.active { background:var(--gold); color:var(--navy); }
   .lex-item .src { font-size:.7rem; direction:ltr; color:var(--muted); font-family:Georgia,serif; }
   .lex-item.active .src { color:var(--navy); opacity:.7; }
   #lex-entry { flex:1; overflow:auto; padding:26px clamp(16px,5vw,70px); }
-  .lex-hw { direction:rtl; font-family:"FrankRuehl",serif; font-size:2rem; color:var(--navy); border-bottom:2px solid var(--gold); padding-bottom:8px; margin-bottom:4px; }
+  .lex-hw { direction:rtl; font-family:var(--he-font); font-size:2rem; color:var(--navy); border-bottom:2px solid var(--gold); padding-bottom:8px; margin-bottom:4px; }
   .lex-src { font-size:.8rem; color:var(--muted); margin-bottom:14px; }
   .lex-def { line-height:1.85; font-size:1.05rem; }
   .lex-def a { color:#2f4f8f; text-decoration:none; }
-  .lex-def a[dir="rtl"] { font-family:"FrankRuehl",serif; }
+  .lex-def a[dir="rtl"] { font-family:var(--he-font); }
   .muted { color:var(--muted); }
   .welcome { max-width:600px; margin:8vh auto; text-align:center; color:var(--muted); }
   .welcome h2 { color:var(--navy); font-weight:normal; }
@@ -75,16 +81,63 @@
     <a class="home" href="../Zmanim/index.html">Zmanim</a>
     <a class="home" href="../START-HERE.html">Home</a>
     <div class="theme-pop" id="theme-pop">
-      <button class="theme-btn" id="theme-toggle" title="Display theme" aria-label="Display theme">
+      <button class="theme-btn" id="theme-toggle" title="Display, fonts &amp; colors" aria-label="Display settings">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h10"/><path d="M18 7h2"/><circle cx="16" cy="7" r="2"/><path d="M4 17h2"/><path d="M10 17h10"/><circle cx="8" cy="17" r="2"/></svg>
       </button>
       <div class="theme-menu" id="theme-menu">
-        <div class="sp-label">Background theme</div>
-        <div class="sp-row">
-          <button class="sp-theme" data-t="light">Light</button>
-          <button class="sp-theme" data-t="sepia">Sepia</button>
-          <button class="sp-theme" data-t="dark">Dark</button>
-          <button class="sp-theme" data-t="night">Night</button>
+        <div class="sp-section">
+          <div class="sp-label">Background theme</div>
+          <div class="sp-row">
+            <button class="sp-theme" data-t="light">Light</button>
+            <button class="sp-theme" data-t="sepia">Sepia</button>
+            <button class="sp-theme" data-t="dark">Dark</button>
+            <button class="sp-theme" data-t="night">Night</button>
+          </div>
+        </div>
+        <div class="sp-section">
+          <div class="sp-label">Text color</div>
+          <div class="sp-row sp-color">
+            <input type="color" id="sp-textcolor">
+            <div class="sp-swatches" id="sp-textswatches"></div>
+            <button class="linkbtn" id="sp-textreset">reset</button>
+          </div>
+        </div>
+        <div class="sp-section">
+          <div class="sp-label">Page color</div>
+          <div class="sp-row sp-color">
+            <input type="color" id="sp-bgcolor">
+            <div class="sp-swatches" id="sp-bgswatches"></div>
+            <button class="linkbtn" id="sp-bgreset">reset</button>
+          </div>
+        </div>
+        <div class="sp-section">
+          <div class="sp-label">Hebrew font</div>
+          <select id="sp-font">
+            <option value="frankruehl">Frank Ruehl (classic)</option>
+            <option value="noto">Noto Serif Hebrew</option>
+            <option value="david">David</option>
+            <option value="narkisim">Narkisim</option>
+            <option value="georgia">Georgia (serif)</option>
+            <option value="arial">Arial (sans-serif)</option>
+          </select>
+        </div>
+        <div class="sp-section">
+          <div class="sp-label">Text size</div>
+          <div class="sp-row">
+            <span style="font-size:.8rem">A</span>
+            <input type="range" id="sp-fontsize" min="14" max="20" step="1" style="flex:1">
+            <span style="font-size:1.2rem">A</span>
+            <span id="sp-fontsize-val" class="muted" style="width:3em;text-align:center"></span>
+          </div>
+        </div>
+        <hr style="border:none;border-top:1px solid var(--line);margin:10px 0">
+        <div class="sp-section">
+          <div class="sp-label">Your preferences (display settings)</div>
+          <div class="sp-row" style="gap:8px">
+            <button class="dict-btn" id="sp-export" title="Save your display preferences to a file">Export to file</button>
+            <button class="dict-btn" id="sp-import" title="Load previously exported preferences">Import from file</button>
+            <input type="file" id="sp-import-file" accept=".json" style="display:none">
+          </div>
         </div>
       </div>
     </div>
@@ -111,33 +164,110 @@
 <script src="dictionaries/index.js"></script>
 <script>
 (function () {
-  var KEY = "cr-dict-theme";
-  var t = "light";
-  try { t = localStorage.getItem(KEY) || "light"; } catch (e) {}
-  document.body.setAttribute("data-theme", t);
+  var KEY = "cr-dict-display";
+  var FONTS = {
+    frankruehl: '"FrankRuehl","NotoHe",serif', noto: '"NotoHe","FrankRuehl",serif',
+    david: '"David Libre","David","FrankRuehl","NotoHe",serif', narkisim: '"Narkisim","FrankRuehl","NotoHe",serif',
+    georgia: 'Georgia,"Times New Roman",serif', arial: 'Arial,Helvetica,sans-serif'
+  };
+  var TEXT_SWATCHES = ["#22252b", "#000000", "#433422", "#1b2a4a", "#e2e2e2"];
+  var BG_SWATCHES = ["#ffffff", "#faf7f0", "#f4ecd8", "#eaf3ea", "#1c2028"];
+  var d = { theme: "light", font: "frankruehl", fontSize: 16, textColor: null, bgColor: null };
+  try { Object.assign(d, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) {}
+  function persist() { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {} }
+
+  function applyTheme() { document.body.setAttribute("data-theme", d.theme); }
+  function applyFont() { document.documentElement.style.setProperty("--he-font", FONTS[d.font] || FONTS.frankruehl); }
+  function applyFontSize() { document.documentElement.style.fontSize = d.fontSize + "px"; }
+  function applyColors() {
+    if (d.textColor) document.body.style.setProperty("--ink", d.textColor); else document.body.style.removeProperty("--ink");
+    if (d.bgColor) document.body.style.setProperty("--bg", d.bgColor); else document.body.style.removeProperty("--bg");
+  }
+  function setTheme(t) { d.theme = t; d.textColor = null; d.bgColor = null; persist(); applyTheme(); applyColors(); syncUI(); }
+
   var menu = document.getElementById("theme-menu");
-  function sync() {
-    document.querySelectorAll("#theme-menu button").forEach(function (b) {
-      b.classList.toggle("active", b.getAttribute("data-t") === t);
+  function syncUI() {
+    document.querySelectorAll(".sp-theme").forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-t") === d.theme); });
+    document.getElementById("sp-font").value = d.font;
+    document.getElementById("sp-fontsize-val").textContent = d.fontSize + "px";
+    document.getElementById("sp-fontsize").value = d.fontSize;
+    document.getElementById("sp-textcolor").value = d.textColor || "#22252b";
+    document.getElementById("sp-bgcolor").value = d.bgColor || "#faf7f0";
+  }
+  function buildSwatches() {
+    var tw = document.getElementById("sp-textswatches"); tw.innerHTML = "";
+    TEXT_SWATCHES.forEach(function (c) {
+      var s = document.createElement("button"); s.className = "sp-sw"; s.style.background = c; s.title = c;
+      s.addEventListener("click", function () { d.textColor = c; persist(); applyColors(); syncUI(); });
+      tw.appendChild(s);
+    });
+    var bw = document.getElementById("sp-bgswatches"); bw.innerHTML = "";
+    BG_SWATCHES.forEach(function (c) {
+      var s = document.createElement("button"); s.className = "sp-sw"; s.style.background = c; s.title = c;
+      s.addEventListener("click", function () { d.bgColor = c; persist(); applyColors(); syncUI(); });
+      bw.appendChild(s);
     });
   }
+
+  applyTheme(); applyFont(); applyFontSize(); applyColors();
+  buildSwatches(); syncUI();
+
   document.getElementById("theme-toggle").addEventListener("click", function (e) {
     e.stopPropagation();
     menu.classList.toggle("open");
   });
-  document.querySelectorAll("#theme-menu button").forEach(function (b) {
-    b.addEventListener("click", function () {
-      t = b.getAttribute("data-t");
-      document.body.setAttribute("data-theme", t);
-      try { localStorage.setItem(KEY, t); } catch (e) {}
-      sync();
-      menu.classList.remove("open");
-    });
+  document.querySelectorAll(".sp-theme").forEach(function (b) {
+    b.addEventListener("click", function () { setTheme(b.getAttribute("data-t")); menu.classList.remove("open"); });
+  });
+  document.getElementById("sp-font").addEventListener("change", function () { d.font = this.value; persist(); applyFont(); });
+  document.getElementById("sp-fontsize").addEventListener("input", function () { d.fontSize = +this.value; persist(); applyFontSize(); syncUI(); });
+  document.getElementById("sp-textcolor").addEventListener("input", function () { d.textColor = this.value; persist(); applyColors(); });
+  document.getElementById("sp-bgcolor").addEventListener("input", function () { d.bgColor = this.value; persist(); applyColors(); });
+  document.getElementById("sp-textreset").addEventListener("click", function () { d.textColor = null; persist(); applyColors(); syncUI(); });
+  document.getElementById("sp-bgreset").addEventListener("click", function () { d.bgColor = null; persist(); applyColors(); syncUI(); });
+
+  async function saveBlob(blob, suggestedName, description, mimeType, extensions) {
+    if (window.showSaveFilePicker) {
+      try {
+        var accept = {}; accept[mimeType] = extensions;
+        var handle = await window.showSaveFilePicker({ suggestedName: suggestedName, types: [{ description: description, accept: accept }] });
+        var writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        return true;
+      } catch (e) { if (e && e.name === "AbortError") return false; }
+    }
+    var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = suggestedName;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 100);
+    return true;
+  }
+  document.getElementById("sp-export").addEventListener("click", async function () {
+    var data = { _cr_export: true, _date: new Date().toISOString() };
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.indexOf("cr-") === 0) data[k] = localStorage.getItem(k);
+    }
+    var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    await saveBlob(blob, "computer-rabbis-dict-prefs.json", "JSON data file", "application/json", [".json"]);
+  });
+  document.getElementById("sp-import").addEventListener("click", function () { document.getElementById("sp-import-file").click(); });
+  document.getElementById("sp-import-file").addEventListener("change", function () {
+    var file = this.files[0]; if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var data = JSON.parse(reader.result);
+        if (!data._cr_export) { alert("This does not appear to be a Computer Rabbis data file."); return; }
+        for (var k in data) if (k.indexOf("cr-") === 0) localStorage.setItem(k, data[k]);
+        location.reload();
+      } catch (e) { alert("Could not read this file: " + e.message); }
+    };
+    reader.readAsText(file);
   });
   document.addEventListener("click", function (e) {
     if (!e.target.closest("#theme-pop")) menu.classList.remove("open");
   });
-  sync();
 })();
 </script>
 </body>
