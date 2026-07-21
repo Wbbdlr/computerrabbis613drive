@@ -18,9 +18,14 @@
   header .navlinks { margin-inline-start:auto; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   header .drive-home { color:#eaeef6; text-decoration:none; border:1px solid #3a4353; background:var(--navy2); border-radius:6px; padding:7px 14px; font-size:.85rem; }
   header .drive-home:hover { background:#3a4353; }
-  .theme-pick { display:flex; gap:4px; }
-  .theme-pick button { border:1px solid #3a4353; background:var(--navy2); color:#cdd6ea; border-radius:6px; padding:6px 9px; font-size:.78rem; cursor:pointer; font:inherit; }
-  .theme-pick button.active { background:var(--coral); color:var(--navy); border-color:var(--coral); font-weight:bold; }
+  .theme-pop { position:relative; }
+  .theme-btn { border:1px solid #3a4353; background:var(--navy2); color:#eaeef6; border-radius:6px; padding:7px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .theme-btn:hover { background:#3a4353; }
+  .theme-menu { display:none; position:absolute; top:calc(100% + 6px); right:0; background:var(--card); border:1px solid var(--line); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.25); padding:6px; min-width:130px; z-index:50; }
+  .theme-menu.open { display:block; }
+  .theme-menu button { display:block; width:100%; text-align:left; background:none; border:none; border-radius:5px; padding:7px 10px; font:inherit; font-size:.85rem; color:var(--ink); cursor:pointer; }
+  .theme-menu button:hover { background:var(--tint); }
+  .theme-menu button.active { background:var(--coral); color:var(--navy); font-weight:bold; }
   header .brand { font-size:1rem; letter-spacing:.12em; text-transform:uppercase; color:var(--gold); }
   header h1 { margin:2px 0 2px; font-size:1.5rem; font-weight:normal; }
   header .sub { color:#cdd6ea; font-size:.9rem; margin-bottom:12px; }
@@ -90,11 +95,16 @@
       <a href="../Library-Web/index.html" class="drive-home">Library</a>
       <a href="../Library-Web/dictionaries.html" class="drive-home">Dictionaries</a>
       <a href="../START-HERE.html" class="drive-home">Drive Home</a>
-      <div class="theme-pick" id="theme-pick">
-        <button data-t="light" title="Light">Light</button>
-        <button data-t="sepia" title="Sepia">Sepia</button>
-        <button data-t="dark" title="Dark">Dark</button>
-        <button data-t="night" title="Night">Night</button>
+      <div class="theme-pop" id="theme-pop">
+        <button class="theme-btn" id="theme-toggle" title="Display theme" aria-label="Display theme">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8L6 18M18 6l1.8-1.8"/></svg>
+        </button>
+        <div class="theme-menu" id="theme-menu">
+          <button data-t="light">Light</button>
+          <button data-t="sepia">Sepia</button>
+          <button data-t="dark">Dark</button>
+          <button data-t="night">Night</button>
+        </div>
       </div>
     </div>
   </div>
@@ -379,18 +389,27 @@
   var t = "light";
   try { t = localStorage.getItem(KEY) || "light"; } catch (e) {}
   document.body.setAttribute("data-theme", t);
+  var menu = document.getElementById("theme-menu");
   function sync() {
-    document.querySelectorAll("#theme-pick button").forEach(function (b) {
+    document.querySelectorAll("#theme-menu button").forEach(function (b) {
       b.classList.toggle("active", b.getAttribute("data-t") === t);
     });
   }
-  document.querySelectorAll("#theme-pick button").forEach(function (b) {
+  document.getElementById("theme-toggle").addEventListener("click", function (e) {
+    e.stopPropagation();
+    menu.classList.toggle("open");
+  });
+  document.querySelectorAll("#theme-menu button").forEach(function (b) {
     b.addEventListener("click", function () {
       t = b.getAttribute("data-t");
       document.body.setAttribute("data-theme", t);
       try { localStorage.setItem(KEY, t); } catch (e) {}
       sync();
+      menu.classList.remove("open");
     });
+  });
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest("#theme-pop")) menu.classList.remove("open");
   });
   sync();
 })();
