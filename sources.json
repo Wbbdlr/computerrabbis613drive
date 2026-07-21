@@ -10,6 +10,14 @@
       "seforimCount": 5961,
       "upstreams": ["Sefaria", "Dicta", "Hebrew Wikisource", "Ben-Yehuda Project", "Orayta"],
       "note": "Currently Hebrew, single merged version per text. English translations and multiple manuscript versions are NOT yet included (planned via Sefaria-Export, see build/README)."
+    },
+    "siddurSefardEnglish": {
+      "source": "Sefaria",
+      "hebrewVersion": "The Metsudah siddur, 1981",
+      "englishVersion": "Translation based on the Metsudah linear siddur, by Avrohom Davis, 1981",
+      "license": "CC-BY",
+      "snapshotDate": "2026-07-21",
+      "note": "Daily tefillah (Shacharis/Mincha/Maariv/Krias Shema/Kabbalas Shabbos) fully translated; some supplementary sections (bris milah, Kiddush Levanah, occasional brachos, Lag BaOmer piyutim) are Hebrew-only where Sefaria has no translation for that section."
     }
   },
   "engines": {
