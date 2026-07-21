@@ -1218,6 +1218,12 @@ window.CR = window.CR || {};
       pane.addEventListener("mouseup", showLookup);
       pane.addEventListener("mousedown", function (e) { if (!e.target.closest("#lookup-fab")) hideLookup(); });
       pane.addEventListener("scroll", function () { hideLookup(); hideHlMenu(); });
+      // clicking into the reading area collapses the sidebar too, not just the toggle button/arrow
+      pane.addEventListener("click", function () {
+        if (document.body.classList.contains("nosidebar")) return;
+        if (window.getSelection && String(window.getSelection())) return; // don't collapse mid text-selection
+        document.body.classList.add("nosidebar");
+      });
     });
 
     // global click: close popovers
