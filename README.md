@@ -44,7 +44,9 @@ cd offline-torah-drive
 powershell -ExecutionPolicy Bypass -File build\fetch_sources.ps1
 ```
 
-This downloads the Otzaria app + library and builds the browser-reader data into `usb-root\`.
+This downloads the Otzaria app + library, builds the browser-reader data, pulls the curated
+Sefaria English translations (Shas/Rambam/Rashi/Chumash/etc. — thousands of files, the slowest
+step), and fetches the English-translated Siddur Sefard, all into `usb-root\`.
 Two more one-time build steps produce data that's also gitignored (regenerate after adding/changing books):
 
 ```powershell
