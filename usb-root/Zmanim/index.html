@@ -19,13 +19,15 @@
   header .drive-home { color:#eaeef6; text-decoration:none; border:1px solid #3a4353; background:var(--navy2); border-radius:6px; padding:7px 14px; font-size:.85rem; }
   header .drive-home:hover { background:#3a4353; }
   .theme-pop { position:relative; }
-  .theme-btn { background:none; border:1px solid #4a5568; border-radius:14px; padding:5px 14px; font:inherit; font-size:.78rem; color:#cdd6ea; cursor:pointer; }
-  .theme-btn:hover { border-color:var(--coral); color:#fff; }
-  .theme-menu { display:none; position:absolute; top:calc(100% + 8px); right:0; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 14px; min-width:150px; box-shadow:0 6px 20px rgba(0,0,0,.15); z-index:50; }
+  .theme-btn { border:1px solid #3a4353; background:var(--navy2); color:#eaeef6; border-radius:6px; padding:7px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .theme-btn:hover { background:#3a4353; }
+  .theme-menu { display:none; position:absolute; z-index:50; top:calc(100% + 8px); right:0; width:min(280px,80vw); background:var(--card); border:1px solid var(--line); border-radius:10px; box-shadow:0 8px 28px rgba(0,0,0,.22); padding:14px 18px; }
   .theme-menu.open { display:block; }
-  .theme-menu button { display:flex; align-items:center; width:100%; text-align:left; background:none; border:none; padding:4px 0; font:inherit; font-size:.88rem; color:var(--ink); cursor:pointer; }
-  .theme-menu button:hover { color:var(--coral); }
-  .theme-menu button.active { color:var(--coral); font-weight:bold; }
+  .sp-label { font-size:.82rem; color:var(--muted); margin-bottom:5px; }
+  .sp-row { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+  .sp-theme { flex:1; padding:8px; border:1px solid var(--line); border-radius:6px; background:var(--card); color:var(--ink); cursor:pointer; font:inherit; font-size:.85rem; text-align:center; }
+  .sp-theme:hover { border-color:var(--coral); }
+  .sp-theme.active { background:var(--navy); color:#fff; border-color:var(--navy); }
   header .brand { font-size:1rem; letter-spacing:.12em; text-transform:uppercase; color:var(--gold); }
   header h1 { margin:2px 0 2px; font-size:1.5rem; font-weight:normal; }
   header .sub { color:#cdd6ea; font-size:.9rem; margin-bottom:12px; }
@@ -96,12 +98,17 @@
       <a href="../Library-Web/dictionaries.html" class="drive-home">Dictionaries</a>
       <a href="../START-HERE.html" class="drive-home">Drive Home</a>
       <div class="theme-pop" id="theme-pop">
-        <button class="theme-btn" id="theme-toggle" title="Display theme">Theme</button>
+        <button class="theme-btn" id="theme-toggle" title="Display theme" aria-label="Display theme">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h10"/><path d="M18 7h2"/><circle cx="16" cy="7" r="2"/><path d="M4 17h2"/><path d="M10 17h10"/><circle cx="8" cy="17" r="2"/></svg>
+        </button>
         <div class="theme-menu" id="theme-menu">
-          <button data-t="light">Light</button>
-          <button data-t="sepia">Sepia</button>
-          <button data-t="dark">Dark</button>
-          <button data-t="night">Night</button>
+          <div class="sp-label">Background theme</div>
+          <div class="sp-row">
+            <button class="sp-theme" data-t="light">Light</button>
+            <button class="sp-theme" data-t="sepia">Sepia</button>
+            <button class="sp-theme" data-t="dark">Dark</button>
+            <button class="sp-theme" data-t="night">Night</button>
+          </div>
         </div>
       </div>
     </div>
